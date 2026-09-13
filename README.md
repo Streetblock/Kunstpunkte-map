@@ -36,7 +36,16 @@ npm test
 npm run test:smoke
 ```
 
-`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus und testet die gebündelte App in jsdom mit simulierten Netzwerk- und Standortantworten. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 14 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus und testet die gebündelte App in jsdom mit simulierten Netzwerk- und Standortantworten. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 21 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+
+## Favoriten
+
+- Den Stern in einer Trefferkarte oder „Merken“ in den Standortdetails wählen, um den gesamten Kunstpunkt zu speichern oder wieder zu entfernen.
+- Der Stern mit Anzahl im Kopfbereich öffnet die Favoritenansicht. Die vorhandenen Wochenendfilter trennen Nord und Süd; Suche und Offraumfilter funktionieren weiterhin zusammen mit den Favoriten.
+- Ein Neuladen erhält die gemerkten Kunstpunkte. Die aktuelle Such-/Filteransicht wird beim Neuladen zurückgesetzt; „Filter zurücksetzen“ löscht keine Favoriten.
+- Gespeichert werden nur jahresbezogene Standort-IDs unter `kunstpunkte-map:favorites:v1` in `localStorage`. Kein Konto, keine Übertragung der Merkliste und keine Synchronisierung zwischen Geräten.
+- Favoriten gelten pro Browser und Website-Adresse. Lokale Vorschau und GitHub-Pages-Seite haben getrennte Merklisten. Das Löschen der Websitedaten entfernt die Favoriten; im Privatmodus kann die Speicherung beim Schließen enden.
+- Änderungen werden zwischen geöffneten Tabs übernommen. Blockierter Speicher oder fehlgeschlagenes Schreiben führen zu einem Hinweis; die Oberfläche behauptet dann nicht, erfolgreich gespeichert zu haben.
 
 ## Daten und Aktualisierung
 

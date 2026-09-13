@@ -34,6 +34,23 @@ Die bereitgestellte Nutzeraufnahme zeigt die frühe Listenansicht und war die Gr
 
 ## Nächste manuelle Prüfung
 
+Die folgenden Favoritenprüfungen ergänzen den ursprünglichen Kern. Aktuell insgesamt 21 bestandene automatisierte Tests (15 fachliche/DOM-Tests und 6 Anwendungstests).
+
+### Ergänzung: Favoriten
+
+| ID | Abnahmekriterium | Prüfung |
+| --- | --- | --- |
+| F01 | Kunstpunkte über Stern in Liste und Details speichern/entfernen; beide Anzeigen und Gesamtanzahl stimmen überein. | Gebaute App in jsdom geprüft. |
+| F02 | Gespeicherte IDs bleiben nach erneutem Start mit demselben Browserspeicher erhalten; Entfernen bleibt ebenfalls gespeichert. | Speicher- und Anwendungstest mit erneuter App-Initialisierung bestanden. |
+| F03 | Favoritenansicht zeigt nur gemerkte Standorte; Nord/Süd, Suche und Offraumfilter bilden die korrekte Schnittmenge. | Fachliche Tests und vollständiger Bedienablauf bestanden. |
+| F04 | Keine Treffer und Entfernen des letzten sichtbaren Favoriten ergeben eine verständliche leere Ansicht. Zurücksetzen der Filter löscht keine Merkliste. | Anwendungstest bestanden; Speicheränderung ausschließlich über Merken/Entfernen. |
+| F05 | Blockierter/voller Speicher erzeugt keine falsche Erfolgsmeldung oder gespeicherte Darstellung; beschädigte Daten lassen die App benutzbar. | Fehlerfälle fachlich und mit der gebauten App geprüft. |
+| F06 | Einträge anderer Jahre erscheinen nicht als Favorit der Ausgabe 2026; Änderungen in anderen Tabs werden übernommen. | Jahres- und Tab-Tests bestanden. |
+
+Echtes Neuladen, Schließen/Wiederöffnen des Browsers und Touchbedienung bitte zusätzlich auf den Zielgeräten testen. Merklisten sind lokal pro Browser/Origin; insbesondere werden Favoriten aus `localhost` nicht auf die öffentliche GitHub-Seite übertragen.
+
+### Geräteprüfung
+
 1. iPhone Safari und Android Chrome, konkrete Versionen notieren. Ansichten bei 360×640, 390×844 und 412×915 sowie quer und mit Bildschirmtastatur ausprobieren.
 2. `Wildförster` suchen, Treffer öffnen, alle Personen aufklappen, Details schließen; Nummer 194 mit langer Liste prüfen.
 3. Kartencluster und nahe Standorte auswählen, zoomen, Filter wechseln und Karten-/Listenwechsel prüfen.

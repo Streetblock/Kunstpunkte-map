@@ -8,7 +8,8 @@ Stand: 13.09.2026 · Entwurf; keine Phase ist bereits abgenommen.
 - M1: Repository, Import, Datenmodell und mobile Ansichten umgesetzt. Bilder sind optional vorbereitet; Quelle/Nutzungsumfang bleiben offen.
 - M2: Mobiler Kern implementiert und mit 14 fachlichen/Anwendungstests geprüft. Reale Geräteabnahmen bleiben offen.
 - M3: GitHub-Pages-Workflow vorbereitet; Deployments werden erst nach erfolgreichen Prüfungen freigegeben. Geräte- und Besuchertests folgen.
-- M4/M5: Noch nicht begonnen.
+- M4: PWA noch nicht begonnen.
+- M5: Lokale Favoriten vorgezogen und umgesetzt: Speicherung über Neuladen hinweg, eigene Ansicht mit Wochenendfiltern. Weitere Erweiterungen offen.
 
 Details und Grenzen der Prüfungen: [Abnahmeprotokoll](ABNAHME.md).
 
@@ -63,7 +64,7 @@ Priorität gemeinsam festlegen:
 
 1. Verlässliche Sparten- und Zugangsangaben mit Quellen; entsprechende Filter.
 2. Geprüfte Öffnungszeiten und Ausnahmen; „Jetzt geöffnet“ mit A18.
-3. Lokale Merkliste und Besuchsstatus.
+3. Lokale Merkliste umgesetzt; Besuchsstatus weiterhin optional/offen.
 4. Bilder und vertiefende Texte bei geklärter Nutzung.
 5. Echte Geh-/Radstrecken bzw. Tourenplanung mit geeignetem Routingdienst.
 6. Offline-Hintergrundkarte mit ausdrücklich geeignetem Anbieter oder eigenen Kacheln.
