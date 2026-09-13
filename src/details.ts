@@ -23,14 +23,16 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
     toggle.setAttribute('aria-expanded', String(value));
     toggle.textContent = value ? 'Weniger anzeigen' : 'Alle Teilnehmenden';
   };
-  const hide = () => {
+  const hide = (restoreFocus = true) => {
     sheet.hidden = true;
     selected = null;
-    if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
-    else required<HTMLInputElement>('#search').focus({ preventScroll: true });
+    if (restoreFocus) {
+      if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
+      else required<HTMLInputElement>('#search').focus({ preventScroll: true });
+    }
     onClose();
   };
-  close.addEventListener('click', hide);
+  close.addEventListener('click', () => hide());
   toggle.addEventListener('click', () => setExpanded(!expanded));
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && !sheet.hidden && !document.querySelector('dialog[open]')) {

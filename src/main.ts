@@ -185,7 +185,7 @@ function render(fit = true) {
     const active = button.dataset.weekend === (filters.weekend === null ? 'all' : String(filters.weekend));
     button.setAttribute('aria-pressed', String(active)); button.classList.toggle('active', active);
   });
-  if (details.selected && !points.some(point => point.id === details.selected?.id)) details.hide();
+  if (details.selected && !points.some(point => point.id === details.selected?.id)) details.hide(false);
   renderList(points);
   map.setPoints(points, fit);
 }
@@ -194,7 +194,12 @@ function resetFilters() {
   Object.assign(filters, { query: '', weekend: null, offspace: false });
   search.value = ''; render();
 }
-search.addEventListener('input', () => { filters.query = search.value; render(); });
+search.addEventListener('input', () => {
+  filters.query = search.value;
+  if (details.selected) details.hide(false);
+  if (filters.query.trim() && !desktop.matches) setView('list');
+  render();
+});
 reset.addEventListener('click', resetFilters);
 offspace.addEventListener('click', () => { filters.offspace = !filters.offspace; render(); });
 document.querySelectorAll<HTMLButtonElement>('.chip[data-weekend]').forEach(button => {
