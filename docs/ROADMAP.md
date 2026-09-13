@@ -2,6 +2,16 @@
 
 Stand: 13.09.2026 · Entwurf; keine Phase ist bereits abgenommen.
 
+## Umsetzungsstand
+
+- M0: Umfang, unabhängiger Projektkontext und öffentliches GitHub-Repository entschieden.
+- M1: Repository, Import, Datenmodell und mobile Ansichten umgesetzt. Bilder sind optional vorbereitet; Quelle/Nutzungsumfang bleiben offen.
+- M2: Mobiler Kern implementiert und mit 14 fachlichen/Anwendungstests geprüft. Reale Geräteabnahmen bleiben offen.
+- M3: GitHub-Pages-Workflow vorbereitet; Deployments werden erst nach erfolgreichen Prüfungen freigegeben. Geräte- und Besuchertests folgen.
+- M4/M5: Noch nicht begonnen.
+
+Details und Grenzen der Prüfungen: [Abnahmeprotokoll](ABNAHME.md).
+
 ## M0 – Plan abstimmen
 
 Ergebnis: bestätigter Projektplan mit erstem Lieferumfang, Projektkontext, GitHub-Account/Name/Sichtbarkeit und Vorgehen für die verwendeten Daten.
