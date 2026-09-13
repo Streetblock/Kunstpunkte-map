@@ -4,6 +4,7 @@ import { element, externalLink, required } from './dom.ts';
 import { createSearchIndex, filterPoints, isCancelled } from './search.ts';
 import type { Filters } from './search.ts';
 import { createDetails } from './details.ts';
+import { createMap } from './map.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
@@ -12,16 +13,19 @@ required('#app').innerHTML = `
       <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Kunstpunkt, Name oder Adresse suchen</span><input id="search" type="search" placeholder="Nummer, Name oder Straße" autocomplete="off" enterkeyhint="search"></label>
       <div class="filters" aria-label="Kunstpunkte filtern"><div class="weekends" role="group" aria-label="Wochenende"><button class="chip active" data-weekend="all" aria-pressed="true">Alle</button><button class="chip" data-weekend="1" aria-pressed="false"><span class="dot north"></span>12./13.09. <span class="filter-area">Nord</span></button><button class="chip" data-weekend="2" aria-pressed="false"><span class="dot south"></span>19./20.09. <span class="filter-area">Süd</span></button></div><button id="offspace" class="chip" aria-pressed="false">◇ Offräume</button></div>
     </header>
+    <div class="workspace">
+    <section id="map-view" class="map-view" aria-label="Kunstpunkte auf der Karte"><div id="map"></div><button id="map-reset" class="map-reset" aria-label="Alle gefilterten Kunstpunkte auf der Karte anzeigen">↗ Übersicht</button><div class="map-legend"><span><i class="dot north"></i> Nord</span><span><i class="dot south"></i> Süd</span><span>◇ Offraum</span></div><p id="tile-status" class="tile-status" role="status" hidden></p></section>
     <section id="list-view" class="list-view" aria-label="Kunstpunkte als Liste">
       <div class="results-header"><div><p class="eyebrow">Düsseldorf entdecken</p><h2 id="result-count" aria-live="polite">Kunstpunkte laden …</h2></div><button id="reset" class="text-button" hidden>Zurücksetzen</button></div>
       <p id="status" class="status" role="status"></p>
       <div id="results" class="results"></div>
-    </section>
+    </section></div>
+    <nav class="bottom-bar" aria-label="Ansicht wechseln"><div class="view-switch" role="group" aria-label="Darstellung"><button id="view-map" class="active" aria-pressed="true">◎ Karte</button><button id="view-list" aria-pressed="false">☷ Liste <span id="list-count"></span></button></div><div class="footer-meta"><span class="prototype-label">Unabhängiger Prototyp</span><div id="map-attribution"></div></div></nav>
     <section id="detail-sheet" class="detail-sheet" aria-labelledby="detail-title" hidden>
       <div class="sheet-handle" aria-hidden="true"></div><button id="detail-close" class="icon-button close" aria-label="Standortdetails schließen">×</button>
       <div id="detail-summary"></div><button id="detail-toggle" class="detail-toggle" aria-controls="detail-body" aria-expanded="false">Alle Teilnehmenden</button><div id="detail-body" hidden></div>
     </section>
-    <dialog id="info-dialog"><div class="dialog-header"><h2>Über diese Karte</h2><button id="info-close" class="icon-button" aria-label="Information schließen">×</button></div><p>Ein unabhängiger Prototyp für die Kunstpunkte Düsseldorf 2026.</p><p id="data-date"></p><p>Verbindliche Informationen und kurzfristige Änderungen findest du beim Veranstalter.</p><p><a href="https://kunstpunkte.de" target="_blank" rel="noopener noreferrer">kunstpunkte.de ↗</a></p><p>Die Website wird über GitHub Pages bereitgestellt. Beim Aufruf erhält der Hostinganbieter technisch notwendige Verbindungsdaten. Externe Links öffnen den jeweiligen Anbieter.</p><p><a href="https://github.com/Streetblock/Kunstpunkte-map" target="_blank" rel="noopener noreferrer">Projekt und Fehler melden ↗</a></p></dialog>
+    <dialog id="info-dialog"><div class="dialog-header"><h2>Über diese Karte</h2><button id="info-close" class="icon-button" aria-label="Information schließen">×</button></div><p>Ein unabhängiger Prototyp für die Kunstpunkte Düsseldorf 2026.</p><p id="data-date"></p><p>Verbindliche Informationen und kurzfristige Änderungen findest du beim Veranstalter.</p><p><a href="https://kunstpunkte.de" target="_blank" rel="noopener noreferrer">kunstpunkte.de ↗</a></p><p>Die Website wird über GitHub Pages bereitgestellt; der Kartenhintergrund kommt von OpenStreetMap. Diese Anbieter erhalten beim Aufruf technisch notwendige Verbindungsdaten. Externe Links öffnen den jeweiligen Anbieter.</p><p><a href="https://github.com/Streetblock/Kunstpunkte-map" target="_blank" rel="noopener noreferrer">Projekt und Fehler melden ↗</a></p></dialog>
   </main>`;
 
 const search = required<HTMLInputElement>('#search');
@@ -36,7 +40,36 @@ required('#info-close').addEventListener('click', () => info.close());
 const filters: Filters = { query: '', weekend: null, offspace: false };
 let dataset: Dataset;
 let searchIndex = new Map<string, string>();
-const details = createDetails(() => {});
+const details = createDetails(() => map.select(null));
+const map = createMap(required('#map'), point => selectPoint(point), failed => {
+  const notice = required('#tile-status');
+  notice.hidden = !failed;
+  notice.textContent = 'Kartenhintergrund teilweise nicht verfügbar. Die Liste bleibt nutzbar.';
+});
+const desktop = matchMedia('(min-width: 900px)');
+let view: 'map' | 'list' = 'map';
+
+function selectPoint(point: Kunstpunkt) {
+  details.show(point);
+  map.select(point);
+}
+
+function setView(next: 'map' | 'list') {
+  view = next;
+  required('#map-view').hidden = !desktop.matches && view !== 'map';
+  required('#list-view').hidden = !desktop.matches && view !== 'list';
+  for (const name of ['map', 'list'] as const) {
+    const button = required(`#view-${name}`);
+    button.setAttribute('aria-pressed', String(view === name));
+    button.classList.toggle('active', view === name);
+  }
+  map.resize();
+}
+required('#view-map').addEventListener('click', () => setView('map'));
+required('#view-list').addEventListener('click', () => setView('list'));
+required('#map-reset').addEventListener('click', () => map.fit());
+desktop.addEventListener('change', () => setView(view));
+setView(view);
 
 function renderList(points: Kunstpunkt[]) {
   const fragment = document.createDocumentFragment();
@@ -53,7 +86,7 @@ function renderList(points: Kunstpunkt[]) {
     copy.append(element('span', 'card-names', names + (p.participants.length > 2 ? ` + ${p.participants.length - 2} weitere` : '')));
     if (isCancelled(point)) copy.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
     button.append(element('span', 'number-badge', String(p.number)), copy, element('span', 'card-arrow', '↗'));
-    button.addEventListener('click', () => details.show(point));
+    button.addEventListener('click', () => selectPoint(point));
     fragment.append(button);
   }
   if (!points.length) {
@@ -70,6 +103,7 @@ function render() {
   if (!dataset) return;
   const points = filterPoints(dataset.features, searchIndex, filters);
   count.textContent = `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
+  required('#list-count').textContent = String(points.length);
   reset.hidden = !filters.query && !filters.weekend && !filters.offspace;
   offspace.setAttribute('aria-pressed', String(filters.offspace));
   offspace.classList.toggle('active', filters.offspace);
@@ -79,6 +113,7 @@ function render() {
   });
   if (details.selected && !points.some(point => point.id === details.selected?.id)) details.hide();
   renderList(points);
+  map.setPoints(points, true);
 }
 
 function resetFilters() {
@@ -108,6 +143,7 @@ async function loadData() {
     status.textContent = '';
     render();
   } catch {
+    setView('list');
     count.textContent = 'Daten nicht verfügbar';
     status.textContent = 'Die Kunstpunkte konnten nicht geladen werden. Bitte prüfe deine Verbindung.';
     const retry = element('button', 'primary-button', 'Erneut versuchen');
