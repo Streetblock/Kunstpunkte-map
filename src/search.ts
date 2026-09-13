@@ -4,6 +4,7 @@ export interface Filters {
   query: string;
   weekend: Weekend | null;
   offspace: boolean;
+  favoritesOnly?: boolean;
 }
 
 export function normalize(value: string): string {
@@ -35,11 +36,13 @@ export function filterPoints(
   points: Kunstpunkt[],
   index: Map<string, string>,
   filters: Filters,
+  favorites: ReadonlySet<string> = new Set(),
 ): Kunstpunkt[] {
   const terms = normalize(filters.query).split(' ').filter(Boolean);
   const numberQuery = /^\s*\d+\s*$/.test(filters.query) ? Number(filters.query.trim()) : null;
   return points.filter((point) => {
     const p = point.properties;
+    if (filters.favoritesOnly && !favorites.has(point.id)) return false;
     if (filters.weekend !== null && p.weekend !== filters.weekend) return false;
     if (filters.offspace && !p.hasOffspace) return false;
     if (numberQuery !== null) return p.number === numberQuery;
