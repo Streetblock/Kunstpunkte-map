@@ -5,6 +5,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css';
 import type { Kunstpunkt } from './model.ts';
 import { element } from './dom.ts';
 import { isCancelled } from './search.ts';
+import type { Position } from './location.ts';
 
 export function createMap(container: HTMLElement, onSelect: (point: Kunstpunkt) => void, onTileError: (failed: boolean) => void) {
   const map = L.map(container, { zoomControl: false, attributionControl: false, maxZoom: 19, minZoom: 10 });
@@ -39,6 +40,7 @@ export function createMap(container: HTMLElement, onSelect: (point: Kunstpunkt) 
   const markers = new Map<string, L.Marker>();
   let visible: Kunstpunkt[] = [];
   let selected: string | null = null;
+  const locationLayer = L.layerGroup().addTo(map);
 
   const highlight = () => {
     markers.forEach((marker, id) => {
@@ -97,5 +99,11 @@ export function createMap(container: HTMLElement, onSelect: (point: Kunstpunkt) 
       });
     },
     resize() { map.invalidateSize({ pan: false }); },
+    showLocation(position: Position) {
+      locationLayer.clearLayers();
+      L.circle([position.lat, position.lng], { radius: position.accuracy, color: '#1758bb', weight: 1, fillOpacity: .08, interactive: false }).addTo(locationLayer);
+      L.circleMarker([position.lat, position.lng], { radius: 8, color: '#fff', weight: 3, fillColor: '#1758bb', fillOpacity: 1, interactive: false }).addTo(locationLayer);
+      map.setView([position.lat, position.lng], 15, { animate: false });
+    },
   };
 }

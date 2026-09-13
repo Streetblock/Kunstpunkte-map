@@ -1,8 +1,11 @@
 import type { Kunstpunkt } from './model.ts';
 import { element, externalLink, required } from './dom.ts';
 import { isCancelled } from './search.ts';
+import { routeUrls } from './navigation.ts';
+import { distanceMeters, formatDistance } from './location.ts';
+import type { Position } from './location.ts';
 
-export function createDetails(onClose: () => void) {
+export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) => void) {
   const sheet = required<HTMLElement>('#detail-sheet');
   const body = required<HTMLElement>('#detail-body');
   const toggle = required<HTMLButtonElement>('#detail-toggle');
@@ -37,7 +40,7 @@ export function createDetails(onClose: () => void) {
   return {
     get selected() { return selected; },
     hide,
-    show(point: Kunstpunkt) {
+    show(point: Kunstpunkt, position?: Position) {
       if (sheet.hidden) returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       selected = point;
       const p = point.properties;
@@ -51,6 +54,13 @@ export function createDetails(onClose: () => void) {
       const names = p.participants.slice(0, 2).map(person => person.name).join(' · ');
       summary.append(top, title, element('p', 'detail-names', names + (p.participants.length > 2 ? ` und ${p.participants.length - 2} weitere` : '')));
       if (isCancelled(point)) summary.append(element('p', 'cancelled', 'Teilnahme abgesagt'));
+      if (position) summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
+      const actions = element('div', 'detail-actions');
+      const urls = routeUrls(point);
+      actions.append(externalLink('Route hierher ↗', urls.google, 'primary-button'), externalLink('Apple Karten ↗', urls.apple, 'secondary-button'));
+      const share = element('button', 'share-button', 'Link teilen');
+      share.addEventListener('click', () => onShare(point));
+      actions.append(share); summary.append(actions);
       body.replaceChildren();
       const heading = element('h3', '', `An diesem Kunstpunkt (${p.participants.length})`);
       const people = element('ul', 'participant-list');
@@ -58,6 +68,18 @@ export function createDetails(onClose: () => void) {
         const item = element('li');
         item.append(externalLink(`${person.name} ↗`, person.url));
         if (person.cancelled) item.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
+        if (person.artwork && person.artwork.permission.trim()) {
+          const artwork = person.artwork;
+          if (/^https:\/\//.test(artwork.url)) {
+            const figure = element('figure', 'artwork');
+            const img = element('img');
+            img.src = artwork.url; img.alt = artwork.alt; img.loading = 'lazy';
+            img.addEventListener('error', () => figure.remove(), { once: true });
+            const caption = element('figcaption', '', artwork.credit + ' · ');
+            caption.append(externalLink('Bildquelle ↗', artwork.sourceUrl));
+            figure.append(img, caption); item.append(figure);
+          }
+        }
         people.append(item);
       }
       body.append(heading, people, element('p', 'note', 'Öffnungszeiten, Sparten und Zugang findest du auf den verlinkten Originalseiten.'));
