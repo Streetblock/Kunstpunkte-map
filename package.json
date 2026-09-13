@@ -1,0 +1,20 @@
+{
+  "name": "kunstpunkte-map",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "data:import": "node scripts/import-data.ts",
+    "check": "tsc --noEmit",
+    "test": "node --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.13.4",
+    "entities": "8.1.0",
+    "json5": "2.2.3",
+    "typescript": "7.0.2"
+  }
+}
