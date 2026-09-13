@@ -2,6 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { JSDOM, VirtualConsole } from 'jsdom';
+import { FAVORITES_KEY } from '../src/favorites.ts';
 
 const files = readdirSync(new URL('../dist/assets/', import.meta.url));
 const bundle = files.find((file) => /^index-.*\.js$/.test(file));
@@ -11,7 +12,11 @@ const dataset = JSON.parse(
   readFileSync(new URL('../public/data/kunstpunkte-2026.json', import.meta.url), 'utf8'),
 );
 
-async function start(url = 'https://streetblock.github.io/Kunstpunkte-map/', failFetch = false) {
+async function start(
+  url = 'https://streetblock.github.io/Kunstpunkte-map/',
+  failFetch = false,
+  favorites: { saved?: string; blocked?: boolean } = {},
+) {
   const errors: Error[] = [];
   const console = new VirtualConsole();
   console.on('jsdomError', (error) => errors.push(error));
@@ -22,6 +27,13 @@ async function start(url = 'https://streetblock.github.io/Kunstpunkte-map/', fai
     virtualConsole: console,
   });
   const win = dom.window;
+  if (favorites.saved) win.localStorage.setItem(FAVORITES_KEY, favorites.saved);
+  if (favorites.blocked)
+    Object.defineProperty(win, 'localStorage', {
+      get() {
+        throw new Error('Blocked storage');
+      },
+    });
   let locationQueries = 0;
   Object.defineProperty(win.navigator, 'geolocation', {
     value: {
@@ -120,6 +132,112 @@ test('data load failure exposes a retry and original list without an inaccessibl
       'Erneut versuchen',
     );
     assert.equal(doc.querySelectorAll('.fallback-link').length, 1);
+  } finally {
+    app.dom.window.close();
+  }
+});
+
+test('favorites from list and details survive restart and combine with weekend and search filters', async () => {
+  const app = await start();
+  let saved: string;
+  try {
+    const doc = app.dom.window.document;
+    doc.querySelector<HTMLButtonElement>('#view-list')!.click();
+    const star = doc.querySelector<HTMLButtonElement>('[data-favorite-id="2026-2"]')!;
+    star.focus();
+    star.click();
+    assert.equal(
+      doc.querySelector('[data-favorite-id="2026-2"]')?.getAttribute('aria-pressed'),
+      'true',
+    );
+    assert.equal((doc.activeElement as HTMLElement).dataset.favoriteId, '2026-2');
+    assert.equal(doc.querySelector<HTMLElement>('#detail-sheet')!.hidden, true);
+    doc.querySelector<HTMLButtonElement>('.point-card[data-number="163"]')!.click();
+    doc.querySelector<HTMLButtonElement>('#detail-summary .favorite-button')!.click();
+    assert.equal(
+      doc.querySelector('#detail-summary .favorite-button')?.getAttribute('aria-pressed'),
+      'true',
+    );
+    assert.equal(doc.querySelector('#favorites-count')?.textContent, '2');
+    saved = app.dom.window.localStorage.getItem(FAVORITES_KEY)!;
+    assert.deepEqual(JSON.parse(saved).ids, ['2026-163', '2026-2']);
+  } finally {
+    app.dom.window.close();
+  }
+  const reloaded = await start(undefined, false, { saved });
+  let afterRemoval: string;
+  try {
+    const doc = reloaded.dom.window.document;
+    assert.equal(doc.querySelector('#favorites-count')?.textContent, '2');
+    doc.querySelector<HTMLButtonElement>('#favorites-view')!.click();
+    assert.equal(doc.querySelector<HTMLElement>('#list-view')!.hidden, false);
+    assert.equal(doc.querySelectorAll('.point-card').length, 2);
+    doc.querySelector<HTMLButtonElement>('.chip[data-weekend="1"]')!.click();
+    assert.equal(doc.querySelectorAll('.point-card').length, 1);
+    assert.equal(doc.querySelector<HTMLElement>('.point-card')?.dataset.number, '2');
+    const search = doc.querySelector<HTMLInputElement>('#search')!;
+    search.value = 'wildf';
+    search.dispatchEvent(new reloaded.dom.window.Event('input'));
+    assert.equal(doc.querySelector('.point-card mark')?.textContent, 'Dagmar Wildförster');
+    search.value = '';
+    search.dispatchEvent(new reloaded.dom.window.Event('input'));
+    doc.querySelector<HTMLButtonElement>('.chip[data-weekend="2"]')!.click();
+    assert.equal(doc.querySelector<HTMLElement>('.point-card')?.dataset.number, '163');
+    doc.querySelector<HTMLButtonElement>('.point-card')!.click();
+    doc.querySelector<HTMLButtonElement>('#detail-summary .favorite-button')!.click();
+    assert.equal(doc.querySelectorAll('.point-card').length, 0);
+    assert.equal(doc.querySelector<HTMLElement>('#detail-sheet')!.hidden, true);
+    assert.match(doc.querySelector('.empty-state')!.textContent!, /Keine passenden Favoriten/);
+    assert.equal(doc.querySelector('#favorites-count')?.textContent, '1');
+    afterRemoval = reloaded.dom.window.localStorage.getItem(FAVORITES_KEY)!;
+    assert.deepEqual(reloaded.errors, []);
+  } finally {
+    reloaded.dom.window.close();
+  }
+  const final = await start(undefined, false, { saved: afterRemoval });
+  try {
+    assert.equal(final.dom.window.document.querySelector('#favorites-count')?.textContent, '1');
+    assert.equal(
+      final.dom.window.document
+        .querySelector('[data-favorite-id="2026-163"]')
+        ?.getAttribute('aria-pressed'),
+      'false',
+    );
+  } finally {
+    final.dom.window.close();
+  }
+});
+
+test('blocked favorites storage keeps the app usable and never reports a successful save', async () => {
+  const app = await start(undefined, false, { blocked: true });
+  try {
+    const doc = app.dom.window.document;
+    assert.equal(doc.querySelectorAll('.point-card').length, 196);
+    doc.querySelector<HTMLButtonElement>('[data-favorite-id="2026-2"]')!.click();
+    assert.equal(
+      doc.querySelector('[data-favorite-id="2026-2"]')?.getAttribute('aria-pressed'),
+      'false',
+    );
+    assert.match(doc.querySelector('#notice')!.textContent!, /nicht gespeichert/);
+    assert.equal(doc.querySelector('#favorites-count')?.textContent, '0');
+    assert.deepEqual(app.errors, []);
+  } finally {
+    app.dom.window.close();
+  }
+});
+
+test('favorites follow changes in another tab without a page reload', async () => {
+  const app = await start();
+  try {
+    const win = app.dom.window;
+    win.document.querySelector<HTMLButtonElement>('#favorites-view')!.click();
+    win.localStorage.setItem(FAVORITES_KEY, JSON.stringify({ version: 1, ids: ['2026-2'] }));
+    win.dispatchEvent(new win.StorageEvent('storage', { key: FAVORITES_KEY }));
+    assert.equal(win.document.querySelectorAll('.point-card').length, 1);
+    assert.equal(win.document.querySelector('#favorites-count')?.textContent, '1');
+    win.localStorage.removeItem(FAVORITES_KEY);
+    win.dispatchEvent(new win.StorageEvent('storage', { key: FAVORITES_KEY }));
+    assert.equal(win.document.querySelectorAll('.point-card').length, 0);
   } finally {
     app.dom.window.close();
   }

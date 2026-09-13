@@ -1072,3 +1072,96 @@ mark {
 .participant-list a mark {
   margin-right: 4px;
 }
+/* Favorites: separate sibling buttons, never nested inside the studio button. */
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.favorites-view {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: #f1f4f7;
+  font-size: 14px;
+  font-weight: 700;
+}
+.favorites-view > span:first-child {
+  font-size: 23px;
+}
+.favorites-view.active {
+  color: white;
+  background: var(--ink);
+  border-color: var(--ink);
+}
+.point-row {
+  position: relative;
+  min-width: 0;
+}
+.point-row .point-card {
+  height: 100%;
+  padding-right: 60px;
+}
+.point-row .card-arrow {
+  display: none;
+}
+.favorite-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 22px;
+  border: 1px solid var(--line);
+  background: #f5f7fa;
+  color: var(--ink);
+  font-size: 23px;
+}
+.favorite-button[aria-pressed='true'] {
+  background: var(--accent);
+  border-color: #c9dd75;
+}
+.point-row > .favorite-button {
+  position: absolute;
+  right: 8px;
+  top: 10px;
+}
+.detail-sheet .favorite-button {
+  font-size: 14px;
+  font-weight: 700;
+  padding: 0 14px;
+  margin: 6px 0;
+}
+.detail-sheet .favorite-button > span:first-child {
+  font-size: 23px;
+}
+.favorites-hint {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: -4px 0 18px;
+}
+@media (min-width: 900px) {
+  .brand-row h1 {
+    font-size: 28px;
+  }
+  .brand-row {
+    gap: 12px;
+  }
+}
+@media (max-width: 380px) {
+  .brand-row h1 {
+    font-size: 25px;
+  }
+  .brand-actions {
+    gap: 5px;
+  }
+  .favorites-view {
+    padding: 0 8px;
+  }
+}

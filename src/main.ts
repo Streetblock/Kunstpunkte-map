@@ -9,18 +9,21 @@ import { distanceMeters, formatDistance, locate, sortByDistance } from './locati
 import type { Position } from './location.ts';
 import { pointNumberFromUrl, pointUrl } from './navigation.ts';
 import { participantPreview } from './participant-preview.ts';
+import { createFavorites, FAVORITES_KEY } from './favorites.ts';
+import { favoriteButton, updateFavoriteButton } from './favorite-button.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
     <header class="search-panel">
-      <div class="brand-row"><h1>Kunstpunkte<span>unterwegs / 2026</span></h1><button id="info-open" class="icon-button" aria-label="Über diese Karte">i</button></div>
+      <div class="brand-row"><h1>Kunstpunkte<span>unterwegs / 2026</span></h1><div class="brand-actions"><button id="favorites-view" class="favorites-view" aria-label="Favoriten anzeigen" aria-pressed="false"><span aria-hidden="true">☆</span><span id="favorites-count">0</span></button><button id="info-open" class="icon-button" aria-label="Über diese Karte">i</button></div></div>
       <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Kunstpunkt, Name oder Adresse suchen</span><input id="search" type="search" placeholder="Nummer, Name oder Straße" autocomplete="off" enterkeyhint="search"></label>
       <div class="filters" aria-label="Kunstpunkte filtern"><div class="weekends" role="group" aria-label="Wochenende"><button class="chip active" data-weekend="all" aria-pressed="true">Alle</button><button class="chip" data-weekend="1" aria-pressed="false"><span class="dot north"></span>12./13.09. <span class="filter-area">Nord</span></button><button class="chip" data-weekend="2" aria-pressed="false"><span class="dot south"></span>19./20.09. <span class="filter-area">Süd</span></button></div><button id="offspace" class="chip" aria-pressed="false">◇ Offräume</button></div>
     </header>
     <div class="workspace">
     <section id="map-view" class="map-view" aria-label="Kunstpunkte auf der Karte"><div id="map"></div><button id="map-reset" class="map-reset" aria-label="Alle gefilterten Kunstpunkte auf der Karte anzeigen">↗ Übersicht</button><div class="map-legend"><span><i class="dot north"></i> Nord</span><span><i class="dot south"></i> Süd</span><span>◇ Offraum</span></div><p id="tile-status" class="tile-status" role="status" hidden></p></section>
     <section id="list-view" class="list-view" aria-label="Kunstpunkte als Liste">
-      <div class="results-header"><div><p class="eyebrow">Düsseldorf entdecken</p><h2 id="result-count" aria-live="polite">Kunstpunkte laden …</h2></div><button id="reset" class="text-button" hidden>Zurücksetzen</button></div>
+      <div class="results-header"><div><p id="list-heading" class="eyebrow">Düsseldorf entdecken</p><h2 id="result-count" aria-live="polite">Kunstpunkte laden …</h2></div><button id="reset" class="text-button" hidden>Zurücksetzen</button></div>
+      <p id="favorites-hint" class="favorites-hint" hidden>Auf diesem Gerät gespeichert. Oben kannst du deine Favoriten nach Wochenende filtern.</p>
       <div id="nearby-controls" class="nearby-controls" hidden><label for="sort">Sortieren</label><select id="sort"><option value="distance">Nähe (Luftlinie)</option><option value="number">Kunstpunktnummer</option></select><p id="nearby-count"></p></div>
       <p id="status" class="status" role="status"></p>
       <div id="results" class="results"></div>
@@ -41,18 +44,33 @@ const results = required('#results');
 const status = required('#status');
 const count = required('#result-count');
 const info = required<HTMLDialogElement>('#info-dialog');
+info.append(
+  element(
+    'p',
+    '',
+    'Favoriten bleiben in diesem Browser auf diesem Gerät gespeichert. Sie werden nicht an einen Server übertragen. Beim Löschen der Websitedaten gehen sie verloren.',
+  ),
+);
 required('#info-open').addEventListener('click', () => info.showModal());
 required('#info-close').addEventListener('click', () => info.close());
-const filters: Filters = { query: '', weekend: null, offspace: false };
+const filters: Filters = { query: '', weekend: null, offspace: false, favoritesOnly: false };
 let dataset: Dataset;
 let searchIndex = new Map<string, string>();
 let position: Position | undefined;
 let replayingHistory = false;
 let noticeTimer: ReturnType<typeof setTimeout> | undefined;
-const details = createDetails(() => {
-  map.select(null);
-  if (!replayingHistory) history.replaceState(null, '', pointUrl(new URL(location.href), null));
-}, sharePoint);
+const favorites = createFavorites(
+  () => localStorage,
+  (message) => notify(message, true),
+);
+const details = createDetails(
+  () => {
+    map.select(null);
+    if (!replayingHistory) history.replaceState(null, '', pointUrl(new URL(location.href), null));
+  },
+  sharePoint,
+  { has: (id) => favorites.has(id), toggle: toggleFavorite },
+);
 const map = createMap(
   required('#map'),
   (point) => selectPoint(point),
@@ -72,6 +90,43 @@ function selectPoint(point: Kunstpunkt, writeHistory = true) {
     history.pushState(null, '', pointUrl(new URL(location.href), point.properties.number));
   }
 }
+
+function toggleFavorite(point: Kunstpunkt) {
+  if (!favorites.toggle(point.id)) return;
+  const active = document.activeElement;
+  const focusedFavorite =
+    active instanceof HTMLButtonElement ? active.dataset.favoriteId : undefined;
+  const inDetails = active instanceof HTMLElement && !!active.closest('#detail-sheet');
+  render(false);
+  if (focusedFavorite) {
+    const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-favorite-id]')];
+    const target = buttons.find(
+      (button) =>
+        button.dataset.favoriteId === focusedFavorite &&
+        !!button.closest('#detail-sheet') === inDetails &&
+        !button.closest('[hidden]'),
+    );
+    (target ?? required<HTMLButtonElement>('#favorites-view')).focus({ preventScroll: true });
+  }
+  notify(
+    favorites.has(point.id)
+      ? `Kunstpunkt ${point.properties.number} auf diesem Gerät gemerkt.`
+      : `Kunstpunkt ${point.properties.number} aus den Favoriten entfernt.`,
+  );
+}
+
+window.addEventListener('storage', (event) => {
+  if (event.key === FAVORITES_KEY || event.key === null) {
+    favorites.reload();
+    render(false);
+  }
+});
+required('#favorites-view').addEventListener('click', () => {
+  filters.favoritesOnly = !filters.favoritesOnly;
+  if (details.selected) details.hide(false);
+  if (filters.favoritesOnly && !desktop.matches) setView('list');
+  render();
+});
 
 function notify(message: string, persistent = false) {
   const notice = required('#notice');
@@ -109,7 +164,11 @@ function restoreUrl() {
   const point = dataset.features.find((item) => item.properties.number === number);
   replayingHistory = true;
   if (point) {
-    if (!filterPoints(dataset.features, searchIndex, filters).some((item) => item.id === point.id))
+    if (
+      !filterPoints(dataset.features, searchIndex, filters, favorites.ids).some(
+        (item) => item.id === point.id,
+      )
+    )
       resetFilters();
     selectPoint(point, false);
   } else {
@@ -202,13 +261,28 @@ function renderList(points: Kunstpunkt[]) {
       element('span', 'card-arrow', '↗'),
     );
     button.addEventListener('click', () => selectPoint(point));
-    fragment.append(button);
+    const row = element('div', 'point-row');
+    row.append(
+      button,
+      favoriteButton(point, favorites.has(point.id), () => toggleFavorite(point)),
+    );
+    fragment.append(row);
   }
   if (!points.length) {
     const empty = element('div', 'empty-state');
     empty.append(
-      element('h3', '', 'Kein Kunstpunkt gefunden'),
-      element('p', '', 'Versuche einen anderen Namen oder setze die Filter zurück.'),
+      element(
+        'h3',
+        '',
+        filters.favoritesOnly ? 'Keine passenden Favoriten' : 'Kein Kunstpunkt gefunden',
+      ),
+      element(
+        'p',
+        '',
+        filters.favoritesOnly
+          ? 'Merke Kunstpunkte mit dem Stern. Wenn du schon Favoriten hast, probiere ein anderes Wochenende oder setze die Filter zurück.'
+          : 'Versuche einen anderen Namen oder setze die Filter zurück.',
+      ),
     );
     const clear = element('button', 'primary-button', 'Alle Kunstpunkte anzeigen');
     clear.addEventListener('click', resetFilters);
@@ -220,7 +294,7 @@ function renderList(points: Kunstpunkt[]) {
 
 function render(fit = true) {
   if (!dataset) return;
-  let points = filterPoints(dataset.features, searchIndex, filters);
+  let points = filterPoints(dataset.features, searchIndex, filters, favorites.ids);
   if (position) {
     if (required<HTMLSelectElement>('#sort').value === 'distance')
       points = sortByDistance(points, position);
@@ -228,9 +302,21 @@ function render(fit = true) {
     required('#nearby-count').textContent =
       `${nearby} Kunstpunkt${nearby === 1 ? '' : 'e'} innerhalb von 500 m Luftlinie`;
   }
-  count.textContent = `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
+  count.textContent = filters.favoritesOnly
+    ? `${points.length} Favorit${points.length === 1 ? '' : 'en'}`
+    : `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
+  required('#list-heading').textContent = filters.favoritesOnly
+    ? 'Meine Favoriten'
+    : 'Düsseldorf entdecken';
+  required('#favorites-hint').hidden = !filters.favoritesOnly;
+  const favoriteCount = dataset.features.filter((point) => favorites.has(point.id)).length;
+  required('#favorites-count').textContent = String(favoriteCount);
+  const favoriteView = required('#favorites-view');
+  favoriteView.setAttribute('aria-pressed', String(filters.favoritesOnly));
+  favoriteView.setAttribute('aria-label', `Favoriten anzeigen (${favoriteCount})`);
+  favoriteView.classList.toggle('active', !!filters.favoritesOnly);
   required('#list-count').textContent = String(points.length);
-  reset.hidden = !filters.query && !filters.weekend && !filters.offspace;
+  reset.hidden = !filters.query && !filters.weekend && !filters.offspace && !filters.favoritesOnly;
   offspace.setAttribute('aria-pressed', String(filters.offspace));
   offspace.classList.toggle('active', filters.offspace);
   document.querySelectorAll<HTMLButtonElement>('[data-weekend].chip').forEach((button) => {
@@ -242,11 +328,14 @@ function render(fit = true) {
   if (details.selected && !points.some((point) => point.id === details.selected?.id))
     details.hide(false);
   renderList(points);
+  document
+    .querySelectorAll<HTMLButtonElement>('[data-favorite-id]')
+    .forEach((button) => updateFavoriteButton(button, favorites.has(button.dataset.favoriteId!)));
   map.setPoints(points, fit);
 }
 
 function resetFilters() {
-  Object.assign(filters, { query: '', weekend: null, offspace: false });
+  Object.assign(filters, { query: '', weekend: null, offspace: false, favoritesOnly: false });
   search.value = '';
   render();
 }

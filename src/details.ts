@@ -5,8 +5,13 @@ import { participantPreview } from './participant-preview.ts';
 import { routeUrls } from './navigation.ts';
 import { distanceMeters, formatDistance } from './location.ts';
 import type { Position } from './location.ts';
+import { favoriteButton } from './favorite-button.ts';
 
-export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) => void) {
+export function createDetails(
+  onClose: () => void,
+  onShare: (point: Kunstpunkt) => void,
+  favorites?: { has: (id: string) => boolean; toggle: (point: Kunstpunkt) => void },
+) {
   const sheet = required<HTMLElement>('#detail-sheet');
   const body = required<HTMLElement>('#detail-body');
   const toggle = required<HTMLButtonElement>('#detail-toggle');
@@ -65,6 +70,10 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
       const title = element('h2', '', p.address);
       title.id = 'detail-title';
       summary.append(top, title, participantPreview(point, query, 'detail-names'));
+      if (favorites)
+        summary.append(
+          favoriteButton(point, favorites.has(point.id), () => favorites.toggle(point), true),
+        );
       if (isCancelled(point)) summary.append(element('p', 'cancelled', 'Teilnahme abgesagt'));
       if (position)
         summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
