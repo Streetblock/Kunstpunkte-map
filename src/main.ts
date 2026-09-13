@@ -8,6 +8,7 @@ import { createMap } from './map.ts';
 import { distanceMeters, formatDistance, locate, sortByDistance } from './location.ts';
 import type { Position } from './location.ts';
 import { pointNumberFromUrl, pointUrl } from './navigation.ts';
+import { participantPreview } from './participant-preview.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
@@ -61,7 +62,7 @@ const desktop = matchMedia('(min-width: 900px)');
 let view: 'map' | 'list' = 'map';
 
 function selectPoint(point: Kunstpunkt, writeHistory = true) {
-  details.show(point, position);
+  details.show(point, position, filters.query);
   map.select(point);
   if (writeHistory && pointNumberFromUrl(new URL(location.href)) !== point.properties.number) {
     history.pushState(null, '', pointUrl(new URL(location.href), point.properties.number));
@@ -133,7 +134,7 @@ required<HTMLButtonElement>('#locate').addEventListener('click', async () => {
     required<HTMLSelectElement>('#sort').value = 'distance';
     render(false);
     map.showLocation(position);
-    if (details.selected) details.show(details.selected, position);
+    if (details.selected) details.show(details.selected, position, filters.query);
   } catch (error) {
     notify(error instanceof Error ? error.message : 'Der Standort konnte nicht ermittelt werden.', true);
   } finally { button.disabled = false; button.removeAttribute('aria-busy'); }
@@ -150,8 +151,7 @@ function renderList(points: Kunstpunkt[]) {
     const copy = element('span', 'card-copy');
     copy.append(element('span', 'card-meta', `${p.weekend === 1 ? '12./13. September · Nord' : '19./20. September · Süd'}${p.hasOffspace ? ' · ◇ Offraum' : ''}`));
     copy.append(element('strong', 'card-address', p.address));
-    const names = p.participants.slice(0, 2).map(person => person.name).join(' · ');
-    copy.append(element('span', 'card-names', names + (p.participants.length > 2 ? ` + ${p.participants.length - 2} weitere` : '')));
+    copy.append(participantPreview(point, filters.query, 'card-names'));
     if (isCancelled(point)) copy.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
     if (position) copy.append(element('span', 'distance', formatDistance(distanceMeters(position, point))));
     button.append(element('span', 'number-badge', String(p.number)), copy, element('span', 'card-arrow', '↗'));

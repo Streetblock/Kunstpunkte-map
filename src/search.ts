@@ -1,4 +1,4 @@
-import type { Kunstpunkt, Weekend } from './model.ts';
+import type { Kunstpunkt, Participant, Weekend } from './model.ts';
 
 export interface Filters { query: string; weekend: Weekend | null; offspace: boolean }
 
@@ -28,4 +28,17 @@ export function filterPoints(points: Kunstpunkt[], index: Map<string, string>, f
 
 export function isCancelled(point: Kunstpunkt): boolean {
   return point.properties.participants.every(person => person.cancelled);
+}
+
+export function participantMatches(person: Participant, query: string): boolean {
+  const terms = normalize(query).split(' ').filter(Boolean);
+  if (!terms.length || /^\d+$/.test(normalize(query))) return false;
+  const name = normalize(person.name);
+  return terms.some(term => !/^\d+$/.test(term) && name.includes(term));
+}
+
+/** Only the presentation order changes; the source and location identity remain intact. */
+export function participantsForQuery(point: Kunstpunkt, query: string): Participant[] {
+  return [...point.properties.participants].sort((a, b) =>
+    Number(participantMatches(b, query)) - Number(participantMatches(a, query)));
 }

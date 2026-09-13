@@ -1,6 +1,7 @@
 import type { Kunstpunkt } from './model.ts';
 import { element, externalLink, required } from './dom.ts';
-import { isCancelled } from './search.ts';
+import { isCancelled, participantMatches, participantsForQuery } from './search.ts';
+import { participantPreview } from './participant-preview.ts';
 import { routeUrls } from './navigation.ts';
 import { distanceMeters, formatDistance } from './location.ts';
 import type { Position } from './location.ts';
@@ -40,7 +41,7 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
   return {
     get selected() { return selected; },
     hide,
-    show(point: Kunstpunkt, position?: Position) {
+    show(point: Kunstpunkt, position?: Position, query = '') {
       if (sheet.hidden) returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       selected = point;
       const p = point.properties;
@@ -51,8 +52,7 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
         `${p.weekend === 1 ? '12./13.09. · Nord' : '19./20.09. · Süd'}${p.hasOffspace ? ' · Offraum' : ''}`));
       const title = element('h2', '', p.address);
       title.id = 'detail-title';
-      const names = p.participants.slice(0, 2).map(person => person.name).join(' · ');
-      summary.append(top, title, element('p', 'detail-names', names + (p.participants.length > 2 ? ` und ${p.participants.length - 2} weitere` : '')));
+      summary.append(top, title, participantPreview(point, query, 'detail-names'));
       if (isCancelled(point)) summary.append(element('p', 'cancelled', 'Teilnahme abgesagt'));
       if (position) summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
       const actions = element('div', 'detail-actions');
@@ -64,9 +64,11 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
       body.replaceChildren();
       const heading = element('h3', '', `An diesem Kunstpunkt (${p.participants.length})`);
       const people = element('ul', 'participant-list');
-      for (const person of p.participants) {
+      for (const person of participantsForQuery(point, query)) {
         const item = element('li');
-        item.append(externalLink(`${person.name} ↗`, person.url));
+        const link = externalLink(`${person.name} ↗`, person.url);
+        if (participantMatches(person, query)) link.replaceChildren(element('mark', '', person.name), document.createTextNode(' ↗'));
+        item.append(link);
         if (person.cancelled) item.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
         if (person.artwork && person.artwork.permission.trim()) {
           const artwork = person.artwork;

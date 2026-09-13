@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { JSDOM } from 'jsdom';
 import type { Dataset } from '../src/model.ts';
 import { createDetails } from '../src/details.ts';
+import { participantPreview } from '../src/participant-preview.ts';
 
 const data: Dataset = JSON.parse(readFileSync(new URL('../public/data/kunstpunkte-2026.json', import.meta.url), 'utf8'));
 
@@ -28,6 +29,13 @@ test('details expose a complete group studio, correct route links and keyboard c
     details.show(data.features.find(p => p.properties.number === 163)!);
     assert.equal(document.querySelectorAll('.participant-list .cancelled').length, 1);
     assert.equal(document.querySelectorAll('#detail-summary .cancelled').length, 0);
+    const wildfoerster = data.features.find(p => p.properties.number === 2)!;
+    const preview = participantPreview(wildfoerster, 'wildf', 'card-names');
+    assert.ok(preview.textContent?.startsWith('Dagmar Wildförster'));
+    assert.equal(preview.querySelector('mark')?.textContent, 'Dagmar Wildförster');
+    details.show(wildfoerster, undefined, 'wildf');
+    assert.equal(document.querySelector('#detail-summary mark')?.textContent, 'Dagmar Wildförster');
+    assert.equal(document.querySelector('.participant-list li mark')?.textContent, 'Dagmar Wildförster');
     document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' }));
     assert.equal(closed, 1);
     assert.equal(document.querySelector<HTMLElement>('#detail-sheet')!.hidden, true);

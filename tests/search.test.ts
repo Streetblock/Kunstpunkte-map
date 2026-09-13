@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import type { Dataset } from '../src/model.ts';
-import { createSearchIndex, filterPoints, normalize, isCancelled } from '../src/search.ts';
+import { createSearchIndex, filterPoints, normalize, isCancelled, participantsForQuery, participantMatches } from '../src/search.ts';
 
 const data: Dataset = JSON.parse(readFileSync(new URL('../public/data/kunstpunkte-2026.json', import.meta.url), 'utf8'));
 const index = createSearchIndex(data.features);
@@ -33,4 +33,20 @@ test('weekend, offspace and text conditions intersect with no duplicated locatio
 test('a cancelled participant does not close a group studio', () => {
   assert.equal(isCancelled(find('152')[0]!), true);
   assert.equal(isCancelled(find('163')[0]!), false);
+});
+
+test('the searched person is shown first instead of disappearing under more participants', () => {
+  for (const query of ['wildf', 'Wildförster', 'wildforster']) {
+    const point = find(query)[0]!;
+    assert.equal(point.properties.number, 2);
+    const ordered = participantsForQuery(point, query);
+    assert.equal(ordered[0]?.name, 'Dagmar Wildförster');
+    assert.equal(participantMatches(ordered[0]!, query), true);
+    assert.equal(ordered.length, 7);
+    assert.equal(point.properties.participants[0]?.name, 'Paul Dieter Haebich');
+  }
+  const point = find('2')[0]!;
+  assert.deepEqual(participantsForQuery(point, ''), point.properties.participants);
+  assert.deepEqual(participantsForQuery(point, '2'), point.properties.participants);
+  assert.deepEqual(participantsForQuery(point, 'Ackerstraße'), point.properties.participants);
 });
