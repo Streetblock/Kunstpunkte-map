@@ -53,11 +53,15 @@ const details = createDetails(() => {
   map.select(null);
   if (!replayingHistory) history.replaceState(null, '', pointUrl(new URL(location.href), null));
 }, sharePoint);
-const map = createMap(required('#map'), point => selectPoint(point), failed => {
-  const notice = required('#tile-status');
-  notice.hidden = !failed;
-  notice.textContent = 'Kartenhintergrund teilweise nicht verfügbar. Die Liste bleibt nutzbar.';
-});
+const map = createMap(
+  required('#map'),
+  (point) => selectPoint(point),
+  (failed) => {
+    const notice = required('#tile-status');
+    notice.hidden = !failed;
+    notice.textContent = 'Kartenhintergrund teilweise nicht verfügbar. Die Liste bleibt nutzbar.';
+  },
+);
 const desktop = matchMedia('(min-width: 900px)');
 let view: 'map' | 'list' = 'map';
 
@@ -71,18 +75,30 @@ function selectPoint(point: Kunstpunkt, writeHistory = true) {
 
 function notify(message: string, persistent = false) {
   const notice = required('#notice');
-  clearTimeout(noticeTimer); notice.textContent = message; notice.hidden = false;
-  if (!persistent) noticeTimer = setTimeout(() => { notice.hidden = true; }, 7000);
+  clearTimeout(noticeTimer);
+  notice.textContent = message;
+  notice.hidden = false;
+  if (!persistent)
+    noticeTimer = setTimeout(() => {
+      notice.hidden = true;
+    }, 7000);
 }
 
 async function sharePoint(point: Kunstpunkt) {
   const url = pointUrl(new URL(location.href), point.properties.number).href;
   try {
-    if (navigator.share) await navigator.share({ title: `Kunstpunkt ${point.properties.number} · ${point.properties.address}`, url });
-    else if (navigator.clipboard) { await navigator.clipboard.writeText(url); notify('Link kopiert.'); }
-    else notify('Der Link steht in der Adresszeile. Du kannst ihn dort kopieren.', true);
+    if (navigator.share)
+      await navigator.share({
+        title: `Kunstpunkt ${point.properties.number} · ${point.properties.address}`,
+        url,
+      });
+    else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url);
+      notify('Link kopiert.');
+    } else notify('Der Link steht in der Adresszeile. Du kannst ihn dort kopieren.', true);
   } catch (error) {
-    if (!(error instanceof Error && error.name === 'AbortError')) notify('Teilen nicht möglich. Kopiere den Link aus der Adresszeile.');
+    if (!(error instanceof Error && error.name === 'AbortError'))
+      notify('Teilen nicht möglich. Kopiere den Link aus der Adresszeile.');
   }
 }
 
@@ -90,14 +106,18 @@ function restoreUrl() {
   if (!dataset) return;
   const url = new URL(location.href);
   const number = pointNumberFromUrl(url);
-  const point = dataset.features.find(item => item.properties.number === number);
+  const point = dataset.features.find((item) => item.properties.number === number);
   replayingHistory = true;
   if (point) {
-    if (!filterPoints(dataset.features, searchIndex, filters).some(item => item.id === point.id)) resetFilters();
+    if (!filterPoints(dataset.features, searchIndex, filters).some((item) => item.id === point.id))
+      resetFilters();
     selectPoint(point, false);
   } else {
     if (details.selected) details.hide();
-    if (url.searchParams.has('punkt')) notify('Dieser Kunstpunkt wurde nicht gefunden. Alle Standorte bleiben über die Suche erreichbar.');
+    if (url.searchParams.has('punkt'))
+      notify(
+        'Dieser Kunstpunkt wurde nicht gefunden. Alle Standorte bleiben über die Suche erreichbar.',
+      );
   }
   replayingHistory = false;
 }
@@ -122,22 +142,37 @@ setView(view);
 required('#sort').addEventListener('change', () => render(false));
 required<HTMLButtonElement>('#locate').addEventListener('click', async () => {
   const button = required<HTMLButtonElement>('#locate');
-  button.disabled = true; button.setAttribute('aria-busy', 'true');
+  button.disabled = true;
+  button.setAttribute('aria-busy', 'true');
   notify('Dein Standort wird ermittelt …', true);
   try {
     position = await locate(navigator.geolocation);
-    const time = new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Berlin' }).format(position.timestamp);
+    const time = new Intl.DateTimeFormat('de-DE', {
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Europe/Berlin',
+    }).format(position.timestamp);
     const locationInfo = `Standort von ${time} Uhr (Berlin), Genauigkeit ca. ${Math.round(position.accuracy)} m. Zum Aktualisieren erneut „Standort“ wählen.`;
     required('#location-info').textContent = locationInfo;
-    notify(position.accuracy > 100 ? `Dein Standort ist nur ungefähr bekannt. ${locationInfo}` : locationInfo);
+    notify(
+      position.accuracy > 100
+        ? `Dein Standort ist nur ungefähr bekannt. ${locationInfo}`
+        : locationInfo,
+    );
     required('#nearby-controls').hidden = false;
     required<HTMLSelectElement>('#sort').value = 'distance';
     render(false);
     map.showLocation(position);
     if (details.selected) details.show(details.selected, position, filters.query);
   } catch (error) {
-    notify(error instanceof Error ? error.message : 'Der Standort konnte nicht ermittelt werden.', true);
-  } finally { button.disabled = false; button.removeAttribute('aria-busy'); }
+    notify(
+      error instanceof Error ? error.message : 'Der Standort konnte nicht ermittelt werden.',
+      true,
+    );
+  } finally {
+    button.disabled = false;
+    button.removeAttribute('aria-busy');
+  }
 });
 
 function renderList(points: Kunstpunkt[]) {
@@ -149,21 +184,36 @@ function renderList(points: Kunstpunkt[]) {
     button.dataset.number = String(p.number);
     button.setAttribute('aria-label', `Kunstpunkt ${p.number}, ${p.address}, Details anzeigen`);
     const copy = element('span', 'card-copy');
-    copy.append(element('span', 'card-meta', `${p.weekend === 1 ? '12./13. September · Nord' : '19./20. September · Süd'}${p.hasOffspace ? ' · ◇ Offraum' : ''}`));
+    copy.append(
+      element(
+        'span',
+        'card-meta',
+        `${p.weekend === 1 ? '12./13. September · Nord' : '19./20. September · Süd'}${p.hasOffspace ? ' · ◇ Offraum' : ''}`,
+      ),
+    );
     copy.append(element('strong', 'card-address', p.address));
     copy.append(participantPreview(point, filters.query, 'card-names'));
     if (isCancelled(point)) copy.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
-    if (position) copy.append(element('span', 'distance', formatDistance(distanceMeters(position, point))));
-    button.append(element('span', 'number-badge', String(p.number)), copy, element('span', 'card-arrow', '↗'));
+    if (position)
+      copy.append(element('span', 'distance', formatDistance(distanceMeters(position, point))));
+    button.append(
+      element('span', 'number-badge', String(p.number)),
+      copy,
+      element('span', 'card-arrow', '↗'),
+    );
     button.addEventListener('click', () => selectPoint(point));
     fragment.append(button);
   }
   if (!points.length) {
     const empty = element('div', 'empty-state');
-    empty.append(element('h3', '', 'Kein Kunstpunkt gefunden'), element('p', '', 'Versuche einen anderen Namen oder setze die Filter zurück.'));
+    empty.append(
+      element('h3', '', 'Kein Kunstpunkt gefunden'),
+      element('p', '', 'Versuche einen anderen Namen oder setze die Filter zurück.'),
+    );
     const clear = element('button', 'primary-button', 'Alle Kunstpunkte anzeigen');
     clear.addEventListener('click', resetFilters);
-    empty.append(clear); fragment.append(empty);
+    empty.append(clear);
+    fragment.append(empty);
   }
   results.replaceChildren(fragment);
 }
@@ -172,27 +222,33 @@ function render(fit = true) {
   if (!dataset) return;
   let points = filterPoints(dataset.features, searchIndex, filters);
   if (position) {
-    if (required<HTMLSelectElement>('#sort').value === 'distance') points = sortByDistance(points, position);
-    const nearby = points.filter(point => distanceMeters(position!, point) <= 500).length;
-    required('#nearby-count').textContent = `${nearby} Kunstpunkt${nearby === 1 ? '' : 'e'} innerhalb von 500 m Luftlinie`;
+    if (required<HTMLSelectElement>('#sort').value === 'distance')
+      points = sortByDistance(points, position);
+    const nearby = points.filter((point) => distanceMeters(position!, point) <= 500).length;
+    required('#nearby-count').textContent =
+      `${nearby} Kunstpunkt${nearby === 1 ? '' : 'e'} innerhalb von 500 m Luftlinie`;
   }
   count.textContent = `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
   required('#list-count').textContent = String(points.length);
   reset.hidden = !filters.query && !filters.weekend && !filters.offspace;
   offspace.setAttribute('aria-pressed', String(filters.offspace));
   offspace.classList.toggle('active', filters.offspace);
-  document.querySelectorAll<HTMLButtonElement>('[data-weekend].chip').forEach(button => {
-    const active = button.dataset.weekend === (filters.weekend === null ? 'all' : String(filters.weekend));
-    button.setAttribute('aria-pressed', String(active)); button.classList.toggle('active', active);
+  document.querySelectorAll<HTMLButtonElement>('[data-weekend].chip').forEach((button) => {
+    const active =
+      button.dataset.weekend === (filters.weekend === null ? 'all' : String(filters.weekend));
+    button.setAttribute('aria-pressed', String(active));
+    button.classList.toggle('active', active);
   });
-  if (details.selected && !points.some(point => point.id === details.selected?.id)) details.hide(false);
+  if (details.selected && !points.some((point) => point.id === details.selected?.id))
+    details.hide(false);
   renderList(points);
   map.setPoints(points, fit);
 }
 
 function resetFilters() {
   Object.assign(filters, { query: '', weekend: null, offspace: false });
-  search.value = ''; render();
+  search.value = '';
+  render();
 }
 search.addEventListener('input', () => {
   filters.query = search.value;
@@ -201,10 +257,14 @@ search.addEventListener('input', () => {
   render();
 });
 reset.addEventListener('click', resetFilters);
-offspace.addEventListener('click', () => { filters.offspace = !filters.offspace; render(); });
-document.querySelectorAll<HTMLButtonElement>('.chip[data-weekend]').forEach(button => {
+offspace.addEventListener('click', () => {
+  filters.offspace = !filters.offspace;
+  render();
+});
+document.querySelectorAll<HTMLButtonElement>('.chip[data-weekend]').forEach((button) => {
   button.addEventListener('click', () => {
-    filters.weekend = button.dataset.weekend === 'all' ? null : Number(button.dataset.weekend) as Weekend;
+    filters.weekend =
+      button.dataset.weekend === 'all' ? null : (Number(button.dataset.weekend) as Weekend);
     render();
   });
 });
@@ -215,20 +275,38 @@ async function loadData() {
     const response = await fetch(`${import.meta.env.BASE_URL}data/kunstpunkte-2026.json`);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const candidate: Dataset = await response.json();
-    if (candidate.type !== 'FeatureCollection' || candidate.event?.year !== 2026 || !Array.isArray(candidate.features) || !candidate.features.length) throw new Error('Ungültiger Datensatz');
+    if (
+      candidate.type !== 'FeatureCollection' ||
+      candidate.event?.year !== 2026 ||
+      !Array.isArray(candidate.features) ||
+      !candidate.features.length
+    )
+      throw new Error('Ungültiger Datensatz');
     dataset = candidate;
     searchIndex = createSearchIndex(dataset.features);
-    required('#data-date').textContent = `Daten abgerufen am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(dataset.source.retrievedAt))} Uhr (Berlin).`;
+    required('#data-date').textContent =
+      `Daten abgerufen am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(dataset.source.retrievedAt))} Uhr (Berlin).`;
     status.textContent = '';
     render();
     restoreUrl();
   } catch {
     setView('list');
     count.textContent = 'Daten nicht verfügbar';
-    status.textContent = 'Die Kunstpunkte konnten nicht geladen werden. Bitte prüfe deine Verbindung.';
+    status.textContent =
+      'Die Kunstpunkte konnten nicht geladen werden. Bitte prüfe deine Verbindung.';
     const retry = element('button', 'primary-button', 'Erneut versuchen');
-    retry.addEventListener('click', () => { results.replaceChildren(); void loadData(); });
-    results.replaceChildren(retry, externalLink('Zur offiziellen Teilnehmerliste ↗', 'https://kunstpunkte.de/teilnehmer-innen.html', 'fallback-link'));
+    retry.addEventListener('click', () => {
+      results.replaceChildren();
+      void loadData();
+    });
+    results.replaceChildren(
+      retry,
+      externalLink(
+        'Zur offiziellen Teilnehmerliste ↗',
+        'https://kunstpunkte.de/teilnehmer-innen.html',
+        'fallback-link',
+      ),
+    );
   }
 }
 void loadData();

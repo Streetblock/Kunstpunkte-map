@@ -34,42 +34,58 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
   };
   close.addEventListener('click', () => hide());
   toggle.addEventListener('click', () => setExpanded(!expanded));
-  document.addEventListener('keydown', event => {
+  document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !sheet.hidden && !document.querySelector('dialog[open]')) {
-      event.preventDefault(); hide();
+      event.preventDefault();
+      hide();
     }
   });
 
   return {
-    get selected() { return selected; },
+    get selected() {
+      return selected;
+    },
     hide,
     show(point: Kunstpunkt, position?: Position, query = '') {
-      if (sheet.hidden) returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      if (sheet.hidden)
+        returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       selected = point;
       const p = point.properties;
       sheet.dataset.weekend = String(p.weekend);
       summary.replaceChildren();
       const top = element('div', 'detail-topline');
-      top.append(element('span', 'number-badge', String(p.number)), element('span', 'eyebrow',
-        `${p.weekend === 1 ? '12./13.09. · Nord' : '19./20.09. · Süd'}${p.hasOffspace ? ' · Offraum' : ''}`));
+      top.append(
+        element('span', 'number-badge', String(p.number)),
+        element(
+          'span',
+          'eyebrow',
+          `${p.weekend === 1 ? '12./13.09. · Nord' : '19./20.09. · Süd'}${p.hasOffspace ? ' · Offraum' : ''}`,
+        ),
+      );
       const title = element('h2', '', p.address);
       title.id = 'detail-title';
       summary.append(top, title, participantPreview(point, query, 'detail-names'));
       if (isCancelled(point)) summary.append(element('p', 'cancelled', 'Teilnahme abgesagt'));
-      if (position) summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
+      if (position)
+        summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
       const actions = element('div', 'detail-actions');
       const urls = routeUrls(point);
-      actions.append(externalLink('Route hierher ↗', urls.google, 'primary-button'), externalLink('Apple Karten ↗', urls.apple, 'secondary-button'));
+      actions.append(
+        externalLink('Route hierher ↗', urls.google, 'primary-button'),
+        externalLink('Apple Karten ↗', urls.apple, 'secondary-button'),
+      );
       const share = element('button', 'share-button', 'Link teilen');
       share.addEventListener('click', () => onShare(point));
-      actions.append(share); summary.append(actions);
+      actions.append(share);
+      summary.append(actions);
       body.replaceChildren();
       const heading = element('h3', '', `An diesem Kunstpunkt (${p.participants.length})`);
       const people = element('ul', 'participant-list');
       for (const person of participantsForQuery(point, query)) {
         const item = element('li');
         const link = externalLink(`${person.name} ↗`, person.url);
-        if (participantMatches(person, query)) link.replaceChildren(element('mark', '', person.name), document.createTextNode(' ↗'));
+        if (participantMatches(person, query))
+          link.replaceChildren(element('mark', '', person.name), document.createTextNode(' ↗'));
         item.append(link);
         if (person.cancelled) item.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
         if (person.artwork && person.artwork.permission.trim()) {
@@ -77,16 +93,27 @@ export function createDetails(onClose: () => void, onShare: (point: Kunstpunkt) 
           if (/^https:\/\//.test(artwork.url)) {
             const figure = element('figure', 'artwork');
             const img = element('img');
-            img.src = artwork.url; img.alt = artwork.alt; img.loading = 'lazy';
+            img.src = artwork.url;
+            img.alt = artwork.alt;
+            img.loading = 'lazy';
             img.addEventListener('error', () => figure.remove(), { once: true });
             const caption = element('figcaption', '', artwork.credit + ' · ');
             caption.append(externalLink('Bildquelle ↗', artwork.sourceUrl));
-            figure.append(img, caption); item.append(figure);
+            figure.append(img, caption);
+            item.append(figure);
           }
         }
         people.append(item);
       }
-      body.append(heading, people, element('p', 'note', 'Öffnungszeiten, Sparten und Zugang findest du auf den verlinkten Originalseiten.'));
+      body.append(
+        heading,
+        people,
+        element(
+          'p',
+          'note',
+          'Öffnungszeiten, Sparten und Zugang findest du auf den verlinkten Originalseiten.',
+        ),
+      );
       sheet.hidden = false;
       setExpanded(false);
       close.focus({ preventScroll: true });

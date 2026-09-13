@@ -7,6 +7,8 @@
     "node": ">=24"
   },
   "scripts": {
+    "format": "prettier --write src scripts tests index.html vite.config.ts package.json tsconfig.json .prettierrc.json",
+    "format:check": "prettier --check src scripts tests index.html vite.config.ts package.json tsconfig.json .prettierrc.json",
     "dev": "vite",
     "build": "npm run check && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
@@ -23,6 +25,7 @@
     "entities": "8.1.0",
     "jsdom": "26.1.0",
     "json5": "2.2.3",
+    "prettier": "3.9.6",
     "typescript": "7.0.2",
     "vite": "8.3.0"
   },

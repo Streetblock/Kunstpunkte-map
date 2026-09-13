@@ -7,20 +7,27 @@ const output = new URL('../public/data/kunstpunkte-2026.json', import.meta.url);
 const refresh = process.argv.includes('--refresh');
 
 const response = refresh ? await fetch(SOURCE_URL, { signal: AbortSignal.timeout(20_000) }) : null;
-if (response && !response.ok) throw new Error(`Quelldownload fehlgeschlagen: HTTP ${response.status}`);
+if (response && !response.ok)
+  throw new Error(`Quelldownload fehlgeschlagen: HTTP ${response.status}`);
 const source = response ? await response.text() : await readFile(snapshot, 'utf8');
-const retrievedAt: string = refresh ? new Date().toISOString()
+const retrievedAt: string = refresh
+  ? new Date().toISOString()
   : JSON.parse(await readFile(metadata, 'utf8')).retrievedAt;
 const dataset = parseSource(source, retrievedAt);
 const json = JSON.stringify(dataset);
-if (Buffer.byteLength(json) >= 200_000) throw new Error('Daten überschreiten das Budget von 200 KB.');
+if (Buffer.byteLength(json) >= 200_000)
+  throw new Error('Daten überschreiten das Budget von 200 KB.');
 const report = {
   points: dataset.features.length,
-  participants: dataset.features.reduce((sum, point) => sum + point.properties.participants.length, 0),
-  north: dataset.features.filter(point => point.properties.weekend === 1).length,
-  south: dataset.features.filter(point => point.properties.weekend === 2).length,
-  offspaceLocations: dataset.features.filter(point => point.properties.hasOffspace).length,
-  bytes: Buffer.byteLength(json), sha256: dataset.source.sha256,
+  participants: dataset.features.reduce(
+    (sum, point) => sum + point.properties.participants.length,
+    0,
+  ),
+  north: dataset.features.filter((point) => point.properties.weekend === 1).length,
+  south: dataset.features.filter((point) => point.properties.weekend === 2).length,
+  offspaceLocations: dataset.features.filter((point) => point.properties.hasOffspace).length,
+  bytes: Buffer.byteLength(json),
+  sha256: dataset.source.sha256,
 };
 
 // Validate completely before replacing any published data. Rename atomically on the same filesystem.
