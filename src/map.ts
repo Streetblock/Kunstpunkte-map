@@ -6,6 +6,7 @@ import type { Kunstpunkt } from './model.ts';
 import { element } from './dom.ts';
 import { isCancelled } from './search.ts';
 import type { Position } from './location.ts';
+import { participantPreview } from './participant-preview.ts';
 
 export function createMap(
   container: HTMLElement,
@@ -87,8 +88,8 @@ export function createMap(
     for (const point of points) {
       const button = element('button', 'cluster-place');
       button.append(
-        element('strong', '', `Nr. ${point.properties.number} · ${point.properties.address}`),
-        element('span', '', point.properties.participants.map((person) => person.name).join(' · ')),
+        participantPreview(point, '', 'card-names'),
+        element('span', '', `Nr. ${point.properties.number} · ${point.properties.address}`),
       );
       button.addEventListener('click', () => {
         chooser.close();
@@ -126,8 +127,8 @@ export function createMap(
           const badge = element('span', 'pin-number', String(p.number));
           const [lng, lat] = point.geometry.coordinates;
           const marker = L.marker([lat, lng], {
-            title: `Kunstpunkt ${p.number}: ${p.address}${p.hasOffspace ? ' · Offraum' : ''}`,
-            alt: `Kunstpunkt ${p.number}: ${p.address}`,
+            title: `${p.participants.map((person) => person.name).join(' · ')} · Kunstpunkt ${p.number}: ${p.address}`,
+            alt: `${p.participants.map((person) => person.name).join(' · ')} · Kunstpunkt ${p.number}: ${p.address}`,
             icon: L.divIcon({
               html: badge,
               className: `point-marker weekend-${p.weekend}${p.hasOffspace ? ' offspace-marker' : ''}${isCancelled(point) ? ' cancelled-marker' : ''}`,
@@ -168,9 +169,16 @@ export function createMap(
         clusters.zoomToShowLayer(marker, () => {
           highlight();
           const [lng, lat] = point.geometry.coordinates;
+          const sheet = document.querySelector<HTMLElement>('#detail-sheet');
+          const bounds = container.getBoundingClientRect();
+          const sheetBounds =
+            sheet && !sheet.hidden && !sheet.closest('dialog')
+              ? sheet.getBoundingClientRect()
+              : null;
+          const bottomInset = sheetBounds ? Math.max(0, bounds.bottom - sheetBounds.top + 16) : 40;
           map.panInside([lat, lng], {
             paddingTopLeft: [40, 40],
-            paddingBottomRight: [55, Math.min(300, container.clientHeight / 2)],
+            paddingBottomRight: [55, Math.min(bottomInset, Math.max(40, bounds.height - 100))],
             animate: false,
           });
         });

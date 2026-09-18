@@ -12,7 +12,7 @@ const data: Dataset = JSON.parse(
 
 test('details expose a complete group studio, correct route links and keyboard close', () => {
   const dom = new JSDOM(
-    '<input id="search"><button id="origin">Open</button><section id="detail-sheet" hidden><button id="detail-close">Close</button><div id="detail-summary"></div><button id="detail-toggle"></button><div id="detail-body"></div></section>',
+    '<input id="search"><button id="origin">Open</button><section id="detail-sheet" hidden><button id="detail-close">Close</button><div id="detail-summary"></div><div id="detail-body"></div><div id="detail-footer"></div></section>',
     { url: 'https://example.test' },
   );
   const oldDocument = globalThis.document,
@@ -33,9 +33,7 @@ test('details expose a complete group studio, correct route links and keyboard c
     document.querySelector<HTMLButtonElement>('#origin')!.focus();
     details.show(data.features.find((p) => p.properties.number === 194)!);
     assert.equal(document.querySelectorAll('.participant-list li').length, 22);
-    assert.equal(document.querySelector('#detail-toggle')?.getAttribute('aria-expanded'), 'false');
-    document.querySelector<HTMLButtonElement>('#detail-toggle')!.click();
-    assert.equal(document.querySelector('#detail-toggle')?.getAttribute('aria-expanded'), 'true');
+    assert.equal(document.querySelector('#detail-toggle'), null);
     assert.equal(document.querySelector<HTMLElement>('#detail-body')!.hidden, false);
     assert.ok(
       document
@@ -52,11 +50,21 @@ test('details expose a complete group studio, correct route links and keyboard c
     assert.ok(preview.textContent?.startsWith('Dagmar Wildförster'));
     assert.equal(preview.querySelector('mark')?.textContent, 'Dagmar Wildförster');
     details.show(wildfoerster, undefined, 'wildf');
-    assert.equal(document.querySelector('#detail-summary mark')?.textContent, 'Dagmar Wildförster');
+    assert.equal(document.querySelector('#detail-title')?.textContent, 'Dagmar Wildförster');
     assert.equal(
       document.querySelector('.participant-list li mark')?.textContent,
       'Dagmar Wildförster',
     );
+    details.show(data.features.find((p) => p.properties.number === 185)!);
+    for (const name of [
+      'Judith Funke',
+      'Katharina von Koschembahr',
+      'Alexia Krauthäuser',
+      'Katrin Roeber',
+    ])
+      assert.ok(document.querySelector('.participant-list')!.textContent!.includes(name));
+    assert.equal(document.querySelector('#detail-title .more-participants'), null);
+    assert.equal(document.querySelector('.detail-address')?.textContent, 'Sonnenstraße 38-40');
     document.dispatchEvent(new dom.window.KeyboardEvent('keydown', { key: 'Escape' }));
     assert.equal(closed, 1);
     assert.equal(document.querySelector<HTMLElement>('#detail-sheet')!.hidden, true);

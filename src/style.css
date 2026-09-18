@@ -285,14 +285,15 @@ input {
   line-height: 1.4;
 }
 .card-address {
-  font-size: 17px;
-  line-height: 1.25;
-  letter-spacing: -0.2px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--muted);
   overflow-wrap: anywhere;
 }
 .card-names {
-  color: var(--muted);
-  font-size: 14px;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1.45;
 }
 .card-arrow {
@@ -420,7 +421,8 @@ input {
   align-items: center;
   padding: 8px 0;
   line-height: 1.4;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
 }
 .note {
   font-size: 14px;
@@ -1073,6 +1075,27 @@ mark {
 .detail-names {
   display: block;
 }
+.detail-sheet .detail-names {
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.detail-address {
+  color: var(--muted);
+  font-size: 16px;
+  margin: 8px 0;
+}
+.more-participants {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+}
+.cluster-place .card-names,
+.cluster-place .card-names > span:not(.more-participants) {
+  color: var(--ink);
+}
 .participant-list a mark {
   margin-right: 4px;
 }
@@ -1195,4 +1218,159 @@ mark {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.browse-switch {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #e8eef4;
+  border-radius: 14px;
+  margin-bottom: 14px;
+}
+.browse-switch button {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.browse-switch .active {
+  background: white;
+  box-shadow: 0 1px 4px #142b4a14;
+}
+.browse-hint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+.participant-card {
+  padding: 16px;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 14px;
+  min-width: 0;
+}
+.participant-card h3 {
+  font-size: 20px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.participant-map {
+  padding-left: 0;
+}
+.participant-appearance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+}
+.participant-appearance .favorite-button {
+  flex: none;
+}
+.appearance-details {
+  display: flex;
+  align-items: flex-start;
+  flex: 1;
+  min-width: 0;
+  gap: 10px;
+  text-align: left;
+  padding: 12px 0;
+}
+#participant-focus-name {
+  flex: 1;
+  padding: 6px 10px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.list-detail-dialog {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  max-width: 560px;
+  width: calc(100% - 24px);
+  max-height: calc(100dvh - 32px);
+  overflow: auto;
+}
+.list-detail-dialog .detail-sheet {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  max-height: calc(100dvh - 36px);
+  margin: 0;
+  border-radius: 18px;
+  box-shadow: none;
+}
+.list-detail-dialog .sheet-handle {
+  visibility: hidden;
+}
+.detail-sheet {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: calc(100% - 170px);
+}
+.workspace {
+  isolation: isolate;
+}
+.sheet-handle,
+#detail-summary,
+#detail-footer {
+  flex: none;
+}
+#detail-body {
+  min-height: 44px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  flex: 1 1 auto;
+  scrollbar-gutter: stable;
+  padding-right: 4px;
+}
+#detail-body:focus-visible {
+  outline: 2px solid #7152d6;
+  outline-offset: -2px;
+}
+#detail-footer {
+  border-top: 1px solid var(--line);
+}
+#detail-footer .detail-actions {
+  margin: 8px 0 0;
+}
+.detail-topline .eyebrow {
+  flex: 1;
+}
+.detail-topline .favorite-button {
+  margin: 0;
+  padding: 0;
+  flex: none;
+}
+@media (max-height: 540px) {
+  .detail-sheet {
+    max-height: calc(100% - 80px);
+    padding-top: 10px;
+    padding-bottom: 6px;
+  }
+  .detail-sheet .sheet-handle {
+    display: none;
+  }
+  .detail-sheet h2 {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  .detail-topline {
+    margin-bottom: 6px;
+  }
+  .detail-address {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+  .detail-actions .share-button {
+    flex-basis: auto;
+    padding: 0 6px;
+  }
+  .detail-actions .primary-button,
+  .detail-actions .secondary-button {
+    padding: 8px;
+    font-size: 13px;
+  }
 }

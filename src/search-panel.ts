@@ -1,7 +1,11 @@
 import { required } from './dom.ts';
 
 /** Collapsing search never silently clears an active filter. */
-export function createSearchPanel(input: HTMLInputElement, onClear: () => void) {
+export function createSearchPanel(
+  input: HTMLInputElement,
+  onClear: () => void,
+  onConfirm: () => void,
+) {
   const panel = required('#search-controls');
   const toggle = required<HTMLButtonElement>('#search-toggle');
   const active = required('#active-search');
@@ -20,7 +24,11 @@ export function createSearchPanel(input: HTMLInputElement, onClear: () => void) 
   }
   toggle.addEventListener('click', () => open(!!panel.hidden));
   edit.addEventListener('click', () => open(true));
-  close.addEventListener('click', () => open(false));
+  const confirm = () => {
+    open(false);
+    onConfirm();
+  };
+  close.addEventListener('click', confirm);
   required('#search-clear').addEventListener('click', () => {
     onClear();
     toggle.focus({ preventScroll: true });
@@ -31,7 +39,7 @@ export function createSearchPanel(input: HTMLInputElement, onClear: () => void) 
       event.stopPropagation();
       open(false);
     }
-    if (event.key === 'Enter') open(false);
+    if (event.key === 'Enter') confirm();
   });
   return { sync };
 }

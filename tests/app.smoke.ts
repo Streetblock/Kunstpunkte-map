@@ -27,6 +27,13 @@ async function start(
     virtualConsole: console,
   });
   const win = dom.window;
+  // jsdom has no native dialog top layer; browser QA covers focus trapping/backdrop.
+  win.HTMLDialogElement.prototype.showModal = function () {
+    this.setAttribute('open', '');
+  };
+  win.HTMLDialogElement.prototype.close = function () {
+    this.removeAttribute('open');
+  };
   if (favorites.saved) win.localStorage.setItem(FAVORITES_KEY, favorites.saved);
   if (favorites.blocked)
     Object.defineProperty(win, 'localStorage', {
@@ -79,7 +86,7 @@ test('production app starts, filters and visibly promotes Wildförster without a
     assert.equal(document.querySelectorAll('.point-card').length, 1);
     assert.equal(document.querySelector('.point-card mark')?.textContent, 'Dagmar Wildförster');
     document.querySelector<HTMLButtonElement>('.point-card')!.click();
-    assert.equal(document.querySelector('#detail-summary mark')?.textContent, 'Dagmar Wildförster');
+    assert.equal(document.querySelector('#detail-title')?.textContent, 'Dagmar Wildförster');
     assert.equal(new URL(app.dom.window.location.href).searchParams.get('punkt'), '2');
     assert.ok(document.querySelector('#map-attribution a')?.textContent?.includes('OpenStreetMap'));
     document.querySelector<HTMLButtonElement>('#detail-close')!.click();
@@ -136,7 +143,11 @@ test('direct Pages link opens the requested studio and invalid links remain reco
   try {
     const doc = app.dom.window.document;
     assert.equal(doc.querySelector<HTMLElement>('#detail-sheet')!.hidden, false);
-    assert.equal(doc.querySelector('#detail-title')?.textContent, 'Lierenfelder Straße 39');
+    assert.match(
+      doc.querySelector('#detail-title')!.textContent!,
+      /Atelierhaus Lierenfelder Straße/,
+    );
+    assert.equal(doc.querySelector('.detail-address')?.textContent, 'Lierenfelder Straße 39');
     assert.equal(doc.querySelectorAll('.participant-list .cancelled').length, 1);
   } finally {
     app.dom.window.close();
@@ -270,6 +281,70 @@ test('favorites follow changes in another tab without a page reload', async () =
     win.localStorage.removeItem(FAVORITES_KEY);
     win.dispatchEvent(new win.StorageEvent('storage', { key: FAVORITES_KEY }));
     assert.equal(win.document.querySelectorAll('.point-card').length, 0);
+  } finally {
+    app.dom.window.close();
+  }
+});
+
+test('search preserves the selected map or list view, including confirmation', async () => {
+  const app = await start();
+  try {
+    const doc = app.dom.window.document;
+    const input = doc.querySelector<HTMLInputElement>('#search')!;
+    doc.querySelector<HTMLButtonElement>('#search-toggle')!.click();
+    input.value = 'aura';
+    input.dispatchEvent(new app.dom.window.Event('input'));
+    assert.equal(doc.querySelector<HTMLElement>('#map-view')!.hidden, false);
+    assert.equal(doc.querySelectorAll('.point-card').length, 1);
+    input.dispatchEvent(new app.dom.window.KeyboardEvent('keydown', { key: 'Enter' }));
+    assert.equal(doc.querySelector<HTMLElement>('#map-view')!.hidden, false);
+    doc.querySelector<HTMLButtonElement>('#view-list')!.click();
+    input.value = 'wildf';
+    input.dispatchEvent(new app.dom.window.Event('input'));
+    doc.querySelector<HTMLButtonElement>('#search-close')!.click();
+    assert.equal(doc.querySelector<HTMLElement>('#list-view')!.hidden, false);
+    assert.equal(doc.querySelector('.card-names mark')!.textContent, 'Dagmar Wildförster');
+  } finally {
+    app.dom.window.close();
+  }
+});
+
+test('artist browsing keeps names, addresses, map focus, weekends and location favorites connected', async () => {
+  const app = await start();
+  try {
+    const doc = app.dom.window.document;
+    doc.querySelector<HTMLButtonElement>('#view-list')!.click();
+    doc.querySelector<HTMLButtonElement>('#browse-participants')!.click();
+    assert.equal(doc.querySelectorAll('.participant-card').length, 416);
+    const input = doc.querySelector<HTMLInputElement>('#search')!;
+    input.value = 'aura';
+    input.dispatchEvent(new app.dom.window.Event('input'));
+    assert.equal(doc.querySelectorAll('.participant-card').length, 1);
+    assert.equal(doc.querySelector('.participant-card h3')!.textContent, 'AURA Kunstraum');
+    assert.equal(
+      doc.querySelector('.participant-card .card-address')!.textContent,
+      'Birkenstraße 67',
+    );
+    doc.querySelector<HTMLButtonElement>('.appearance-details')!.focus();
+    doc.querySelector<HTMLButtonElement>('.appearance-details')!.click();
+    assert.ok(doc.querySelector('.list-detail-dialog[open] #detail-sheet'));
+    assert.equal(doc.querySelector('#detail-title')!.textContent, 'AURA Kunstraum');
+    doc.querySelector<HTMLButtonElement>('#detail-close')!.click();
+    assert.equal(doc.querySelector('.list-detail-dialog[open]'), null);
+    assert.ok(doc.activeElement?.classList.contains('appearance-details'));
+    doc.querySelector<HTMLButtonElement>('.participant-card .favorite-button')!.click();
+    assert.equal(doc.querySelector('#favorites-count')!.textContent, '1');
+    doc.querySelector<HTMLButtonElement>('.participant-map')!.click();
+    assert.equal(doc.querySelector<HTMLElement>('#map-view')!.hidden, false);
+    assert.match(doc.querySelector('#participant-focus-name')!.textContent!, /AURA/);
+    doc.querySelector<HTMLButtonElement>('.chip[data-weekend="2"]')!.click();
+    assert.equal(doc.querySelectorAll('.participant-card').length, 0);
+    doc.querySelector<HTMLButtonElement>('#reset')!.click();
+    assert.equal(doc.querySelectorAll('.participant-card').length, 416);
+    doc.querySelector<HTMLButtonElement>('#favorites-view')!.click();
+    assert.equal(doc.querySelectorAll('.participant-card').length, 1);
+    assert.equal(doc.querySelector('.participant-card h3')!.textContent, 'AURA Kunstraum');
+    assert.deepEqual(app.errors, []);
   } finally {
     app.dom.window.close();
   }

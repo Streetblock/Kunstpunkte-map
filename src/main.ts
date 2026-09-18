@@ -12,6 +12,9 @@ import { participantPreview } from './participant-preview.ts';
 import { createFavorites, FAVORITES_KEY } from './favorites.ts';
 import { favoriteButton, updateFavoriteButton } from './favorite-button.ts';
 import { createSearchPanel } from './search-panel.ts';
+import { participantEntries } from './participants.ts';
+import type { ParticipantEntry } from './participants.ts';
+import { participantCards } from './participant-list.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
@@ -20,12 +23,15 @@ required('#app').innerHTML = `
       <div id="search-controls" class="search-controls" hidden><label class="search-box"><span class="sr-only">Kunstpunkt, Name oder Adresse suchen</span><input id="search" type="search" placeholder="Name, Raum, Nummer oder Straße" autocomplete="off" enterkeyhint="search"></label><button id="search-close" class="icon-button" aria-label="Suche übernehmen und einklappen" title="Suche übernehmen und einklappen">✓</button></div>
       <div id="active-search" class="active-search" hidden><button id="search-edit" class="text-button"></button><button id="search-clear" class="icon-button" aria-label="Suchfilter löschen">×</button></div>
       <div class="filters" aria-label="Kunstpunkte filtern"><div class="weekends" role="group" aria-label="Wochenende"><button class="chip active" data-weekend="all" aria-pressed="true">Alle</button><button class="chip" data-weekend="1" aria-pressed="false"><span class="dot north"></span>12./13.09. <span class="filter-area">Nord</span></button><button class="chip" data-weekend="2" aria-pressed="false"><span class="dot south"></span>19./20.09. <span class="filter-area">Süd</span></button></div><button id="offspace" class="chip" aria-pressed="false">◇ Offräume</button></div>
+      <div id="participant-focus" class="active-search" hidden><span id="participant-focus-name"></span><button id="participant-focus-clear" class="icon-button" aria-label="Namensauswahl aufheben">×</button></div>
     </header>
     <div class="workspace">
     <section id="map-view" class="map-view" aria-label="Kunstpunkte auf der Karte"><div id="map"></div><button id="map-reset" class="map-reset" aria-label="Alle gefilterten Kunstpunkte auf der Karte anzeigen">↗ Übersicht</button><div class="map-legend"><span><i class="dot north"></i> Nord</span><span><i class="dot south"></i> Süd</span><span>◇ Offraum</span></div><p id="tile-status" class="tile-status" role="status" hidden></p></section>
     <section id="list-view" class="list-view" aria-label="Kunstpunkte als Liste">
       <div class="results-header"><div><p id="list-heading" class="eyebrow">Düsseldorf entdecken</p><h2 id="result-count" aria-live="polite">Kunstpunkte laden …</h2></div><button id="reset" class="text-button" hidden>Zurücksetzen</button></div>
-      <p id="favorites-hint" class="favorites-hint" hidden>Auf diesem Gerät gespeichert. Oben kannst du deine Favoriten nach Wochenende filtern.</p>
+      <div class="browse-switch" role="group" aria-label="Liste gliedern"><button id="browse-places" aria-pressed="true" class="active">Orte</button><button id="browse-participants" aria-pressed="false">Künstler &amp; Räume</button></div>
+      <p id="participants-hint" class="browse-hint" hidden>Künstler, Räume und Kollektive mit ihren Orten. Der Stern merkt jeweils den Ort.</p>
+      <p id="favorites-hint" class="favorites-hint" hidden>Gemerkte Orte auf diesem Gerät. Oben kannst du sie nach Wochenende filtern.</p>
       <div id="nearby-controls" class="nearby-controls" hidden><label for="sort">Sortieren</label><select id="sort"><option value="distance">Nähe (Luftlinie)</option><option value="number">Kunstpunktnummer</option></select><p id="nearby-count"></p></div>
       <p id="status" class="status" role="status"></p>
       <div id="results" class="results"></div>
@@ -34,7 +40,7 @@ required('#app').innerHTML = `
     <p id="notice" class="notice" role="status" hidden></p>
     <section id="detail-sheet" class="detail-sheet" aria-labelledby="detail-title" hidden>
       <div class="sheet-handle" aria-hidden="true"></div><button id="detail-close" class="icon-button close" aria-label="Standortdetails schließen">×</button>
-      <div id="detail-summary"></div><button id="detail-toggle" class="detail-toggle" aria-controls="detail-body" aria-expanded="false">Alle Teilnehmenden</button><div id="detail-body" hidden></div>
+      <div id="detail-summary"></div><div id="detail-body" tabindex="0" role="region" aria-label="Alle Teilnehmenden und Originalseiten"></div><div id="detail-footer"></div>
     </section>
     <dialog id="info-dialog"><div class="dialog-header"><h2>Über diese Karte</h2><button id="info-close" class="icon-button" aria-label="Information schließen">×</button></div><p>Ein unabhängiger Prototyp für die Kunstpunkte Düsseldorf 2026.</p><p id="data-date"></p><p>Verbindliche Informationen und kurzfristige Änderungen findest du beim Veranstalter.</p><p><a href="https://kunstpunkte.de" target="_blank" rel="noopener noreferrer">kunstpunkte.de ↗</a></p><p>Die Website wird über GitHub Pages bereitgestellt; der Kartenhintergrund kommt von OpenStreetMap. Diese Anbieter erhalten beim Aufruf technisch notwendige Verbindungsdaten. Externe Links öffnen den jeweiligen Anbieter.</p><p>Dein Standort wird nur auf Knopfdruck abgefragt und im Browser zur Berechnung der Luftlinie verwendet. Wir speichern keinen Standortverlauf. Beim Zentrieren der Karte werden die dafür benötigten Kartenkacheln angefragt.</p><p id="location-info">Noch kein Standort ermittelt.</p><p><a href="https://github.com/Streetblock/Kunstpunkte-map" target="_blank" rel="noopener noreferrer">Projekt und Fehler melden ↗</a></p></dialog>
   </main>`;
@@ -56,11 +62,17 @@ info.append(
 required('#info-open').addEventListener('click', () => info.showModal());
 required('#info-close').addEventListener('click', () => info.close());
 const filters: Filters = { query: '', weekend: null, offspace: false, favoritesOnly: false };
-const searchPanel = createSearchPanel(search, () => {
-  search.value = '';
-  filters.query = '';
-  render();
-});
+const searchPanel = createSearchPanel(
+  search,
+  () => {
+    search.value = '';
+    filters.query = '';
+    focusedParticipant = null;
+    render();
+    scheduleSearchFit();
+  },
+  fitSearchResults,
+);
 let dataset: Dataset;
 let searchIndex = new Map<string, string>();
 let position: Position | undefined;
@@ -80,7 +92,7 @@ const details = createDetails(
 );
 const map = createMap(
   required('#map'),
-  (point) => selectPoint(point),
+  (point) => selectPoint(point, true, undefined, false),
   (failed) => {
     const notice = required('#tile-status');
     notice.hidden = !failed;
@@ -89,9 +101,51 @@ const map = createMap(
 );
 const desktop = matchMedia('(min-width: 900px)');
 let view: 'map' | 'list' = 'map';
+let browse: 'places' | 'participants' = 'places';
+let focusedParticipant: Pick<ParticipantEntry, 'slug' | 'name'> | null = null;
+let searchFitTimer: ReturnType<typeof setTimeout> | undefined;
+let pendingSearchFit = false;
+function fitSearchResults() {
+  clearTimeout(searchFitTimer);
+  if (!dataset) return;
+  if (view === 'map' || desktop.matches) {
+    map.fit();
+    pendingSearchFit = false;
+  } else pendingSearchFit = true;
+}
+function scheduleSearchFit() {
+  clearTimeout(searchFitTimer);
+  pendingSearchFit = true;
+  searchFitTimer = setTimeout(fitSearchResults, 250);
+}
 
-function selectPoint(point: Kunstpunkt, writeHistory = true) {
-  details.show(point, position, filters.query);
+for (const mode of ['places', 'participants'] as const) {
+  required(`#browse-${mode}`).addEventListener('click', () => {
+    browse = mode;
+    render();
+  });
+}
+required('#participant-focus-clear').addEventListener('click', () => {
+  focusedParticipant = null;
+  render();
+});
+
+function showParticipantOnMap(entry: ParticipantEntry) {
+  focusedParticipant = entry;
+  if (details.selected) details.hide(false);
+  setView('map');
+  render(true);
+}
+
+function selectPoint(
+  point: Kunstpunkt,
+  writeHistory = true,
+  name = focusedParticipant?.name ?? filters.query,
+  inList = view === 'list',
+) {
+  clearTimeout(searchFitTimer);
+  pendingSearchFit = false;
+  details.show(point, position, name, inList);
   map.select(point);
   if (writeHistory && pointNumberFromUrl(new URL(location.href)) !== point.properties.number) {
     history.pushState(null, '', pointUrl(new URL(location.href), point.properties.number));
@@ -104,12 +158,18 @@ function toggleFavorite(point: Kunstpunkt) {
   const focusedFavorite =
     active instanceof HTMLButtonElement ? active.dataset.favoriteId : undefined;
   const inDetails = active instanceof HTMLElement && !!active.closest('#detail-sheet');
+  const participantSlug =
+    active instanceof HTMLElement
+      ? active.closest<HTMLElement>('[data-participant]')?.dataset.participant
+      : undefined;
   render(false);
   if (focusedFavorite) {
     const buttons = [...document.querySelectorAll<HTMLButtonElement>('[data-favorite-id]')];
     const target = buttons.find(
       (button) =>
         button.dataset.favoriteId === focusedFavorite &&
+        button.closest<HTMLElement>('[data-participant]')?.dataset.participant ===
+          participantSlug &&
         !!button.closest('#detail-sheet') === inDetails &&
         !button.closest('[hidden]'),
     );
@@ -172,6 +232,13 @@ function restoreUrl() {
   replayingHistory = true;
   if (point) {
     if (
+      focusedParticipant &&
+      !point.properties.participants.some((person) => person.slug === focusedParticipant!.slug)
+    ) {
+      focusedParticipant = null;
+      render();
+    }
+    if (
       !filterPoints(dataset.features, searchIndex, filters, favorites.ids).some(
         (item) => item.id === point.id,
       )
@@ -199,6 +266,7 @@ function setView(next: 'map' | 'list') {
     button.classList.toggle('active', view === name);
   }
   map.resize();
+  if (pendingSearchFit && (view === 'map' || desktop.matches)) fitSearchResults();
 }
 required('#view-map').addEventListener('click', () => setView('map'));
 required('#view-list').addEventListener('click', () => setView('list'));
@@ -248,7 +316,6 @@ function renderList(points: Kunstpunkt[]) {
     const button = element('button', 'point-card');
     button.dataset.weekend = String(p.weekend);
     button.dataset.number = String(p.number);
-    button.setAttribute('aria-label', `Kunstpunkt ${p.number}, ${p.address}, Details anzeigen`);
     const copy = element('span', 'card-copy');
     copy.append(
       element(
@@ -257,8 +324,8 @@ function renderList(points: Kunstpunkt[]) {
         `${p.weekend === 1 ? '12./13. September · Nord' : '19./20. September · Süd'}${p.hasOffspace ? ' · ◇ Offraum' : ''}`,
       ),
     );
-    copy.append(element('strong', 'card-address', p.address));
     copy.append(participantPreview(point, filters.query, 'card-names'));
+    copy.append(element('span', 'card-address', p.address));
     if (isCancelled(point)) copy.append(element('span', 'cancelled', 'Teilnahme abgesagt'));
     if (position)
       copy.append(element('span', 'distance', formatDistance(distanceMeters(position, point))));
@@ -267,7 +334,7 @@ function renderList(points: Kunstpunkt[]) {
       copy,
       element('span', 'card-arrow', '↗'),
     );
-    button.addEventListener('click', () => selectPoint(point));
+    button.addEventListener('click', () => selectPoint(point, true, undefined, true));
     const row = element('div', 'point-row');
     row.append(
       button,
@@ -303,6 +370,14 @@ function render(fit = false) {
   searchPanel.sync();
   if (!dataset) return;
   let points = filterPoints(dataset.features, searchIndex, filters, favorites.ids);
+  if (focusedParticipant)
+    points = points.filter((point) =>
+      point.properties.participants.some((person) => person.slug === focusedParticipant!.slug),
+    );
+  required('#participant-focus').hidden = !focusedParticipant;
+  required('#participant-focus-name').textContent = focusedParticipant
+    ? `Auf Karte: ${focusedParticipant.name}`
+    : '';
   if (position) {
     if (required<HTMLSelectElement>('#sort').value === 'distance')
       points = sortByDistance(points, position);
@@ -310,9 +385,28 @@ function render(fit = false) {
     required('#nearby-count').textContent =
       `${nearby} Kunstpunkt${nearby === 1 ? '' : 'e'} innerhalb von 500 m Luftlinie`;
   }
-  count.textContent = filters.favoritesOnly
-    ? `${points.length} Favorit${points.length === 1 ? '' : 'en'}`
-    : `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
+  const entries = participantEntries(
+    points,
+    filters.query,
+    !!position && required<HTMLSelectElement>('#sort').value === 'distance',
+  ).filter((entry) => !focusedParticipant || entry.slug === focusedParticipant.slug);
+  if (browse === 'participants') {
+    const pointIds = new Set(
+      entries.flatMap((entry) => entry.appearances.map(({ point }) => point.id)),
+    );
+    points = points.filter((point) => pointIds.has(point.id));
+  }
+  for (const mode of ['places', 'participants'] as const) {
+    required(`#browse-${mode}`).setAttribute('aria-pressed', String(browse === mode));
+    required(`#browse-${mode}`).classList.toggle('active', browse === mode);
+  }
+  required('#participants-hint').hidden = browse !== 'participants';
+  count.textContent =
+    browse === 'participants'
+      ? `${entries.length} ${entries.length === 1 ? 'Eintrag' : 'Einträge'} an ${points.length} ${points.length === 1 ? 'Ort' : 'Orten'}`
+      : filters.favoritesOnly
+        ? `${points.length} Favorit${points.length === 1 ? '' : 'en'}`
+        : `${points.length} Kunstpunkt${points.length === 1 ? '' : 'e'}`;
   required('#list-heading').textContent = filters.favoritesOnly
     ? 'Meine Favoriten'
     : 'Düsseldorf entdecken';
@@ -323,8 +417,15 @@ function render(fit = false) {
   favoriteView.setAttribute('aria-pressed', String(filters.favoritesOnly));
   favoriteView.setAttribute('aria-label', `Favoriten anzeigen (${favoriteCount})`);
   favoriteView.classList.toggle('active', !!filters.favoritesOnly);
-  required('#list-count').textContent = String(points.length);
-  reset.hidden = !filters.query && !filters.weekend && !filters.offspace && !filters.favoritesOnly;
+  required('#list-count').textContent = String(
+    browse === 'participants' ? entries.length : points.length,
+  );
+  reset.hidden =
+    !filters.query &&
+    !filters.weekend &&
+    !filters.offspace &&
+    !filters.favoritesOnly &&
+    !focusedParticipant;
   offspace.setAttribute('aria-pressed', String(filters.offspace));
   offspace.classList.toggle('active', filters.offspace);
   document.querySelectorAll<HTMLButtonElement>('[data-weekend].chip').forEach((button) => {
@@ -335,7 +436,21 @@ function render(fit = false) {
   });
   if (details.selected && !points.some((point) => point.id === details.selected?.id))
     details.hide(false);
-  renderList(points);
+  if (browse === 'participants' && entries.length) {
+    results.replaceChildren(
+      participantCards(
+        entries,
+        filters.query,
+        {
+          select: (point, name) => selectPoint(point, true, name, true),
+          showOnMap: showParticipantOnMap,
+          hasFavorite: (id) => favorites.has(id),
+          toggleFavorite,
+        },
+        position,
+      ),
+    );
+  } else renderList(points);
   document
     .querySelectorAll<HTMLButtonElement>('[data-favorite-id]')
     .forEach((button) => updateFavoriteButton(button, favorites.has(button.dataset.favoriteId!)));
@@ -343,15 +458,19 @@ function render(fit = false) {
 }
 
 function resetFilters() {
+  clearTimeout(searchFitTimer);
+  pendingSearchFit = false;
+  focusedParticipant = null;
   Object.assign(filters, { query: '', weekend: null, offspace: false, favoritesOnly: false });
   search.value = '';
   render();
 }
 search.addEventListener('input', () => {
+  focusedParticipant = null;
   filters.query = search.value;
   if (details.selected) details.hide(false);
-  if (filters.query.trim() && !desktop.matches) setView('list');
   render();
+  scheduleSearchFit();
 });
 reset.addEventListener('click', resetFilters);
 offspace.addEventListener('click', () => {

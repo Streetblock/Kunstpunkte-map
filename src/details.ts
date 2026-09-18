@@ -1,7 +1,6 @@
 import type { Kunstpunkt } from './model.ts';
 import { element, externalLink, required } from './dom.ts';
 import { isCancelled, participantMatches, participantsForQuery } from './search.ts';
-import { participantPreview } from './participant-preview.ts';
 import { routeUrls } from './navigation.ts';
 import { distanceMeters, formatDistance } from './location.ts';
 import type { Position } from './location.ts';
@@ -14,31 +13,39 @@ export function createDetails(
 ) {
   const sheet = required<HTMLElement>('#detail-sheet');
   const body = required<HTMLElement>('#detail-body');
-  const toggle = required<HTMLButtonElement>('#detail-toggle');
   const close = required<HTMLButtonElement>('#detail-close');
   const summary = required<HTMLElement>('#detail-summary');
-  let expanded = false;
+  const footer = required<HTMLElement>('#detail-footer');
+  const sheetParent = sheet.parentElement!;
+  const dialog = element('dialog', 'list-detail-dialog');
+  dialog.setAttribute('aria-labelledby', 'detail-title');
+  sheetParent.append(dialog);
   let returnFocus: HTMLElement | null = null;
   let selected: Kunstpunkt | null = null;
 
-  const setExpanded = (value: boolean) => {
-    expanded = value;
-    sheet.classList.toggle('expanded', value);
-    body.hidden = !value;
-    toggle.setAttribute('aria-expanded', String(value));
-    toggle.textContent = value ? 'Weniger anzeigen' : 'Alle Teilnehmenden';
-  };
   const hide = (restoreFocus = true) => {
     sheet.hidden = true;
     selected = null;
+    if (dialog.open) dialog.close();
+    if (sheet.parentElement === dialog) sheetParent.append(sheet);
     if (restoreFocus) {
       if (returnFocus?.isConnected) returnFocus.focus({ preventScroll: true });
-      else required<HTMLInputElement>('#search').focus({ preventScroll: true });
+      else
+        (
+          document.querySelector<HTMLButtonElement>('#search-toggle') ??
+          required<HTMLInputElement>('#search')
+        ).focus({ preventScroll: true });
     }
     onClose();
   };
   close.addEventListener('click', () => hide());
-  toggle.addEventListener('click', () => setExpanded(!expanded));
+  dialog.addEventListener('cancel', (event) => {
+    event.preventDefault();
+    hide();
+  });
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) hide();
+  });
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Escape' && !sheet.hidden && !document.querySelector('dialog[open]')) {
       event.preventDefault();
@@ -51,7 +58,7 @@ export function createDetails(
       return selected;
     },
     hide,
-    show(point: Kunstpunkt, position?: Position, query = '') {
+    show(point: Kunstpunkt, position?: Position, query = '', inList = dialog.open) {
       if (sheet.hidden)
         returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       selected = point;
@@ -67,13 +74,13 @@ export function createDetails(
           `${p.weekend === 1 ? '12./13.09. · Nord' : '19./20.09. · Süd'}${p.hasOffspace ? ' · Offraum' : ''}`,
         ),
       );
-      const title = element('h2', '', p.address);
+      const title = element('h2');
       title.id = 'detail-title';
-      summary.append(top, title, participantPreview(point, query, 'detail-names'));
+      // Keep room for the complete, independently scrolling participant list below.
+      title.textContent = participantsForQuery(point, query)[0]?.name ?? p.address;
+      summary.append(top, title, element('p', 'detail-address', p.address));
       if (favorites)
-        summary.append(
-          favoriteButton(point, favorites.has(point.id), () => favorites.toggle(point), true),
-        );
+        top.append(favoriteButton(point, favorites.has(point.id), () => favorites.toggle(point)));
       if (isCancelled(point)) summary.append(element('p', 'cancelled', 'Teilnahme abgesagt'));
       if (position)
         summary.append(element('p', 'distance', formatDistance(distanceMeters(position, point))));
@@ -86,7 +93,6 @@ export function createDetails(
       const share = element('button', 'share-button', 'Link teilen');
       share.addEventListener('click', () => onShare(point));
       actions.append(share);
-      summary.append(actions);
       body.replaceChildren();
       const heading = element('h3', '', `An diesem Kunstpunkt (${p.participants.length})`);
       const people = element('ul', 'participant-list');
@@ -123,8 +129,17 @@ export function createDetails(
           'Öffnungszeiten, Sparten und Zugang findest du auf den verlinkten Originalseiten.',
         ),
       );
+      footer.replaceChildren(actions);
+      body.scrollTop = 0;
       sheet.hidden = false;
-      setExpanded(false);
+      body.hidden = false;
+      if (inList) {
+        dialog.append(sheet);
+        if (!dialog.open) dialog.showModal();
+      } else if (dialog.open) {
+        dialog.close();
+        sheetParent.append(sheet);
+      }
       close.focus({ preventScroll: true });
     },
   };
