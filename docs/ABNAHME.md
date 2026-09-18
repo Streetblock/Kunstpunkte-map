@@ -52,7 +52,7 @@ Stand: 13.09.2026. Implementierter Prototyp, noch keine vollständige Abnahme au
 | A15 | Quell-/Zeitangabe implementiert, Attribution außerhalb überlagerbarer Kartenpanels; Importabbruch und Datenladefehler getestet. Reale Kachelausfälle noch manuell prüfen. |
 | A01/A02/A07/A14 | Responsive CSS, mindestens 44-Pixel-Buttons/Marker, Clustering und zugängliche Bedienung implementiert. Tatsächliche Touchbedienung, Layout, Kontraste und Screenreader-Abnahme noch offen. |
 | A13 | Kein abgeschlossener Test mit Netz-/CPU-Drosselung und drei Kaltstarts. |
-| A16/A17 | PWA bewusst nächste Stufe; nicht implementiert. |
+| A16/A17 | PWA implementiert; automatisierte Prüfungen und Browserprüfung siehe Ergänzung unten. Installation/Flugmodus auf echten Mobilgeräten noch offen. |
 | A18 | Öffnungszeitenfilter zurückgestellt, bis verlässliche Zeitdaten vorliegen. |
 | A19 | Fünf Besuchertests noch ausstehend. |
 
@@ -83,3 +83,14 @@ Echtes Neuladen, Schließen/Wiederöffnen des Browsers und Touchbedienung bitte 
 4. Eigenen Standort erlauben bzw. verweigern; Luftlinie, Genauigkeit und erneute Messung prüfen.
 5. Google-/Apple-Navigation sowie Teilen und Browser-Zurück auf dem Mobilgerät testen.
 6. Bildschirmleser, Tastatur, 200 % Vergrößerung, Kontraste und Performance messen; Befunde nachtragen.
+
+## Ergänzung 18.09.2026: PWA
+
+Manifest mit relativem Projektpfad, Standalone-Anzeige, PNG-Icons in 192/512 Pixeln, Maskable- und Apple-Touch-Icon implementiert. Installationshilfe und gegebenenfalls Browser-Installationsbutton im Infodialog. Offline-Status, Datenstand und Updatehinweis sichtbar. Kein Vorladen oder Speichern von Kartenkacheln durch den Service Worker.
+
+- 33 automatisierte Tests: 17 fachliche/DOM-Tests, 11 Anwendungstests, 5 PWA-Tests. Neue Prüfungen umfassen Manifest/Icon-Abmessungen, Offline-Start in der Liste, Installationsprompt, Offline-App und Direktlinks, Ausschluss fremder Requests, fehlerhafte/unterbrochene Updates, projektbezogene Cachebereinigung und Wiederherstellung fehlenden Caches.
+- Im eingebetteten Chromium-Browser unter `http://127.0.0.1:4173/`: „Offline bereit“ nach Installation des Service Workers bestätigt. Vite-Vorschauserver anschließend gezielt beendet. Neuladen, AURA-Suche und erneutes Neuladen mit gespeichertem Favoriten funktionierten weiterhin. Dies prüft die Nichterreichbarkeit des App-Servers; die allgemeine Internetverbindung und OSM waren dabei weiter verfügbar.
+- Das App-Icon wurde visuell geprüft. Der Offline-Speicher wird erst nach vollständiger Vorbereitung zugesagt. Neue Versionen warten auf das Schließen aller alten App-Fenster; kein erzwungener Wechsel während der Benutzung.
+- Offen: tatsächliche Home-Screen-Installation und eigenständiger App-Start auf iPhone Safari/Android Chrome, Flugmodus mit komplettem Browser-/App-Neustart sowie Updatewechsel mit mehreren realen Tabs. Der eingebettete Browser ersetzt diese Geräteabnahme nicht.
+
+Geräteablauf: online öffnen → ⓘ „Offline bereit“ → installieren → Kunstpunkt merken → Flugmodus → App schließen und erneut öffnen → Suche/Filter/Textdetails/Favorit prüfen. Anschließend Netz einschalten; nach einem neuen Deployment Updatehinweis prüfen, alle Fenster schließen und App erneut starten. Favorit und aktueller Datenstand müssen erhalten beziehungsweise korrekt angezeigt sein.

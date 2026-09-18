@@ -12,7 +12,7 @@ Nächster eigenständiger Ausbau: dauerhafte Personen-/Raumidentitäten mit nach
 - M1: Repository, Import, Datenmodell und mobile Ansichten umgesetzt. Bilder sind optional vorbereitet; Quelle/Nutzungsumfang bleiben offen.
 - M2: Mobiler Kern implementiert und mit 14 fachlichen/Anwendungstests geprüft. Reale Geräteabnahmen bleiben offen.
 - M3: GitHub-Pages-Workflow vorbereitet; Deployments werden erst nach erfolgreichen Prüfungen freigegeben. Geräte- und Besuchertests folgen.
-- M4: PWA noch nicht begonnen.
+- M4: Installierbare PWA mit Icons, Offline-App und Datensatz sowie geprüften vollständigen Updates umgesetzt. Lokaler Browser- und automatisierter Fehlertest dokumentiert; Installation und Flugmodus auf echten Mobilgeräten bleiben offen.
 - M5: Lokale Favoriten vorgezogen und umgesetzt: Speicherung über Neuladen hinweg, eigene Ansicht mit Wochenendfiltern. Weitere Erweiterungen offen.
 
 Details und Grenzen der Prüfungen: [Abnahmeprotokoll](ABNAHME.md).

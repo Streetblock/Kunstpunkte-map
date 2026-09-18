@@ -36,7 +36,19 @@ npm test
 npm run test:smoke
 ```
 
-`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus und testet die gebündelte App in jsdom mit simulierten Netzwerk- und Standortantworten. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 26 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus, testet die gebündelte App in jsdom und den gebauten Service Worker mit simuliertem Netz und Cache. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 33 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+
+## Als App installieren und offline nutzen
+
+- Die [öffentliche Karte](https://streetblock.github.io/Kunstpunkte-map/) im Browser öffnen. Unter ⓘ steht die Installationshilfe; unterstützende Browser zeigen dort auch „App installieren“. Alternativ das Browsermenü verwenden. Auf dem iPhone in Safari: Teilen → Zum Home-Bildschirm.
+- Einmal online öffnen und unter ⓘ auf „Offline bereit“ achten. Danach funktionieren Oberfläche, Liste, Suche, Filter, Textdetails und lokale Favoriten ohne Verbindung. Bei erkanntem Offline-Start öffnet sich die Liste. Kartenhintergrund, Originalseiten und Routen benötigen Internet.
+- Der angezeigte Datenstand stammt aus dem gespeicherten Snapshot. Es gibt keine automatische Übernahme neuer Veranstalterdaten. Websitedaten können vom Browser gelöscht werden; fehlenden Offline-Speicher zeigt die App an und ergänzt ihn bei Verbindung aus derselben geprüften Version.
+- Updates werden vollständig im Hintergrund vorbereitet. Bei „Update bereit“ alle Tabs dieser Karte und die installierte App schließen und neu öffnen. Bis dahin bleibt die bestehende Version aktiv; Favoriten werden beim Update nicht gelöscht.
+- Die Offline-Version enthält ausschließlich eigene Build-Dateien und den Datensatz, keine Kartenkacheln. Jede Datei wird vor dem Speichern anhand ihres Build-Hashes geprüft. Ein abgebrochenes Update ersetzt die aktive Version nicht.
+
+Lokal: `npm run build` und `npm run preview`, dann `http://127.0.0.1:4173/`. Loopback-Adressen gelten für Service Worker als vertrauenswürdig; ein Smartphone-Aufruf über eine normale LAN-IP benötigt dagegen HTTPS. Der Entwicklungsserver auf Port 5173 registriert absichtlich keinen Service Worker. [MDN: PWA-Installationsvoraussetzungen](https://developer.mozilla.org/en-US/docs/Web/Progressive_web_apps/Guides/Making_PWAs_installable).
+
+Die eingecheckten PNG-Icons lassen sich mit `node scripts/generate-icons.ts` reproduzieren. Der Produktionsbuild erzeugt `dist/sw.js` aus der tatsächlichen Dateiliste; generierte Build-Dateien gehören nicht ins Repository.
 
 ## Entdecken und Suchen
 
@@ -67,7 +79,7 @@ Der Workflow in `.github/workflows/pages.yml` prüft Formatierung, reproduzierba
 
 ## Grenzen des ersten Tests
 
-- Keine PWA/Offlinezusage, keine eigenen Geh- oder Fahrradrouten.
+- Keine Offline-Hintergrundkarte und keine eigenen Geh- oder Fahrradrouten. Installation und Flugmodus auf echten iPhone-/Android-Geräten bleiben als Geräteabnahme offen.
 - Öffnungszeiten, Sparten, Zugang und Bilder werden derzeit auf den Originalseiten verlinkt. Optionale Bildanzeige mit Quellen-/Urheberangaben ist vorbereitet; der Snapshot enthält keine Bildkopien.
 - Abgesagte Teilnehmende werden gekennzeichnet; eine Teilabsage schließt kein ganzes Atelierhaus.
 - Standort ausschließlich auf Knopfdruck, ohne gespeicherten Verlauf. Kartenanbieter und Navigationsdienste benötigen ihre jeweiligen Onlineverbindungen.

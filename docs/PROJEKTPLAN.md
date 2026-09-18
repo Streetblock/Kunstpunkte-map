@@ -102,6 +102,8 @@ Bilder werden bereits im Detailkonzept und Datenmodell eingeplant: optionale Bil
 
 ### PWA-Ausbaustufe
 
+Beauftragt und umgesetzt am 18.09.2026: installierbare App mit Offline-Liste und versioniertem App-/Datencache. Technische Prüfungen und offene Geräteabnahmen sind in [ABNAHME.md](ABNAHME.md) dokumentiert. Der Kartenhintergrund bleibt online.
+
 Manifest, Icons und Service Worker ergänzen; App-Dateien und geprüfter Datensatz sind nach einem erfolgreichen Onlinebesuch offline nutzbar. Ohne Netz bleiben Liste, Suche, Filter und Textdetails verfügbar. Der Offlinezustand und Datenstand sind sichtbar. Kartenhintergrund und externe Navigation werden nicht als offline verfügbar versprochen.
 
 Neue App-/Datenversionen gemeinsam aktivieren; bei fehlgeschlagenem Update die letzte vollständige Version erhalten. Speicherlöschung/Cacheverlust erkennen und beim nächsten Onlinezugriff neu laden. Installation und Verhalten auf iOS und Android getrennt prüfen.
