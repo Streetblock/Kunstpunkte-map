@@ -99,6 +99,38 @@ test('production app starts, filters and visibly promotes Wildförster without a
   }
 });
 
+test('compact search restores focus and keeps a collapsed query visible until explicitly cleared', async () => {
+  const app = await start();
+  try {
+    const doc = app.dom.window.document;
+    const toggle = doc.querySelector<HTMLButtonElement>('#search-toggle')!;
+    const input = doc.querySelector<HTMLInputElement>('#search')!;
+    assert.equal(doc.querySelector<HTMLElement>('#search-controls')!.hidden, true);
+    toggle.click();
+    assert.equal(doc.activeElement, input);
+    assert.equal(toggle.getAttribute('aria-expanded'), 'true');
+    input.value = 'wildf';
+    input.dispatchEvent(new app.dom.window.Event('input'));
+    input.dispatchEvent(
+      new app.dom.window.KeyboardEvent('keydown', { key: 'Escape', bubbles: true }),
+    );
+    assert.equal(doc.activeElement, toggle);
+    assert.equal(doc.querySelector<HTMLElement>('#search-controls')!.hidden, true);
+    assert.equal(doc.querySelector<HTMLElement>('#active-search')!.hidden, false);
+    assert.match(doc.querySelector('#search-edit')!.textContent!, /wildf/);
+    assert.equal(doc.querySelectorAll('.point-card').length, 1);
+    doc.querySelector<HTMLButtonElement>('#search-edit')!.click();
+    assert.equal(doc.activeElement, input);
+    doc.querySelector<HTMLButtonElement>('#search-close')!.click();
+    doc.querySelector<HTMLButtonElement>('#search-clear')!.click();
+    assert.equal(input.value, '');
+    assert.equal(doc.querySelector<HTMLElement>('#active-search')!.hidden, true);
+    assert.equal(doc.querySelectorAll('.point-card').length, 196);
+  } finally {
+    app.dom.window.close();
+  }
+});
+
 test('direct Pages link opens the requested studio and invalid links remain recoverable', async () => {
   const app = await start('https://streetblock.github.io/Kunstpunkte-map/?punkt=163');
   try {

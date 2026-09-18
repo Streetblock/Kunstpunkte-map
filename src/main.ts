@@ -11,12 +11,14 @@ import { pointNumberFromUrl, pointUrl } from './navigation.ts';
 import { participantPreview } from './participant-preview.ts';
 import { createFavorites, FAVORITES_KEY } from './favorites.ts';
 import { favoriteButton, updateFavoriteButton } from './favorite-button.ts';
+import { createSearchPanel } from './search-panel.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
     <header class="search-panel">
-      <div class="brand-row"><h1>Kunstpunkte<span>unterwegs / 2026</span></h1><div class="brand-actions"><button id="favorites-view" class="favorites-view" aria-label="Favoriten anzeigen" aria-pressed="false"><span aria-hidden="true">☆</span><span id="favorites-count">0</span></button><button id="info-open" class="icon-button" aria-label="Über diese Karte">i</button></div></div>
-      <label class="search-box"><span aria-hidden="true">⌕</span><span class="sr-only">Kunstpunkt, Name oder Adresse suchen</span><input id="search" type="search" placeholder="Nummer, Name oder Straße" autocomplete="off" enterkeyhint="search"></label>
+      <div class="brand-row"><h1>Kunstpunkte<span class="sr-only"> Düsseldorf 2026</span></h1><div class="brand-actions"><button id="search-toggle" class="icon-button" aria-label="Suche öffnen oder einklappen" aria-controls="search-controls" aria-expanded="false">⌕</button><button id="favorites-view" class="favorites-view" aria-label="Favoriten anzeigen" aria-pressed="false"><span aria-hidden="true">☆</span><span id="favorites-count">0</span></button><button id="info-open" class="icon-button" aria-label="Über diese Karte">i</button></div></div>
+      <div id="search-controls" class="search-controls" hidden><label class="search-box"><span class="sr-only">Kunstpunkt, Name oder Adresse suchen</span><input id="search" type="search" placeholder="Name, Raum, Nummer oder Straße" autocomplete="off" enterkeyhint="search"></label><button id="search-close" class="icon-button" aria-label="Suche einklappen">×</button></div>
+      <div id="active-search" class="active-search" hidden><button id="search-edit" class="text-button"></button><button id="search-clear" class="icon-button" aria-label="Suchfilter löschen">×</button></div>
       <div class="filters" aria-label="Kunstpunkte filtern"><div class="weekends" role="group" aria-label="Wochenende"><button class="chip active" data-weekend="all" aria-pressed="true">Alle</button><button class="chip" data-weekend="1" aria-pressed="false"><span class="dot north"></span>12./13.09. <span class="filter-area">Nord</span></button><button class="chip" data-weekend="2" aria-pressed="false"><span class="dot south"></span>19./20.09. <span class="filter-area">Süd</span></button></div><button id="offspace" class="chip" aria-pressed="false">◇ Offräume</button></div>
     </header>
     <div class="workspace">
@@ -54,6 +56,11 @@ info.append(
 required('#info-open').addEventListener('click', () => info.showModal());
 required('#info-close').addEventListener('click', () => info.close());
 const filters: Filters = { query: '', weekend: null, offspace: false, favoritesOnly: false };
+const searchPanel = createSearchPanel(search, () => {
+  search.value = '';
+  filters.query = '';
+  render();
+});
 let dataset: Dataset;
 let searchIndex = new Map<string, string>();
 let position: Position | undefined;
@@ -292,7 +299,8 @@ function renderList(points: Kunstpunkt[]) {
   results.replaceChildren(fragment);
 }
 
-function render(fit = true) {
+function render(fit = false) {
+  searchPanel.sync();
   if (!dataset) return;
   let points = filterPoints(dataset.features, searchIndex, filters, favorites.ids);
   if (position) {
@@ -376,7 +384,7 @@ async function loadData() {
     required('#data-date').textContent =
       `Daten abgerufen am ${new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Berlin' }).format(new Date(dataset.source.retrievedAt))} Uhr (Berlin).`;
     status.textContent = '';
-    render();
+    render(true);
     restoreUrl();
   } catch {
     setView('list');

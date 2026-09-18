@@ -1,5 +1,14 @@
 # Prüfstand des ersten mobilen Kerns
 
+## Ergänzung 18.09.2026: kompakter Header und Karte
+
+- Suchfeld standardmäßig geschlossen, per Suchsymbol mit Fokus erreichbar. Escape/Schließen klappt ein, erhält den Suchfilter und zeigt ihn als löschbaren Suchbegriff. Automatisierter Bedienablauf bestanden.
+- Zoomabhängiger Clusterradius (40/32/26/22 Pixel); Cluster zeigen „Orte“ und öffnen eine direkte Standortauswahl mit zusätzlicher Zoomaktion. Auffächern bleibt für nahe/gleiche Koordinaten erreichbar.
+- Filter passen die Kartenansicht nicht mehr automatisch an; „Übersicht“ übernimmt das bewusst. Unveränderte Marker werden nicht neu aufgebaut.
+- 15 fachliche/DOM-Tests und 7 Tests der gebauten App bestanden, einschließlich TypeScript und Produktionsbuild.
+- Browserprüfung bei 390×844: Header geschlossen 119 Pixel einschließlich horizontaler Scrollleiste; Suche AURA, Escape, Löschen, Cluster mit zwei Orten und Auswahl Nr. 11 erfolgreich. Beim Nordfilter blieben Karten-Transformation und geladene Kachelkoordinaten identisch.
+- Reale Touch-/Screenreaderprüfung auf iPhone/Android und Feinabstimmung der Clusterdichte bleiben offen.
+
 Stand: 13.09.2026. Implementierter Prototyp, noch keine vollständige Abnahme auf echten Mobilgeräten.
 
 ## Durchgeführt

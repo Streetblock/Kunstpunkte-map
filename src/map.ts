@@ -47,20 +47,58 @@ export function createMap(
   });
   const clusters = L.markerClusterGroup({
     showCoverageOnHover: false,
-    maxClusterRadius: 48,
-    spiderfyOnMaxZoom: true,
-    zoomToBoundsOnClick: true,
+    maxClusterRadius: (zoom) => (zoom <= 13 ? 40 : zoom === 14 ? 32 : zoom === 15 ? 26 : 22),
+    spiderfyOnMaxZoom: false,
+    spiderfyDistanceMultiplier: 1.5,
+    zoomToBoundsOnClick: false,
     animate: !matchMedia('(prefers-reduced-motion: reduce)').matches,
     iconCreateFunction(cluster) {
       const badge = element('span', 'cluster-inner', String(cluster.getChildCount()));
-      badge.setAttribute(
-        'aria-label',
-        `${cluster.getChildCount()} Kunstpunkte, zum Vergrößern auswählen`,
-      );
+      badge.append(element('small', '', 'Orte'));
+      badge.setAttribute('aria-label', `${cluster.getChildCount()} Orte, Standorte auswählen`);
       return L.divIcon({ html: badge, className: 'point-cluster', iconSize: [48, 48] });
     },
   }).addTo(map);
   const markers = new Map<string, L.Marker>();
+  const pointByMarker = new Map<L.Marker, Kunstpunkt>();
+  const chooser = element('dialog', 'cluster-dialog');
+  chooser.setAttribute('aria-labelledby', 'cluster-title');
+  container.closest('main')!.append(chooser);
+  clusters.on('clusterclick', (event: L.LeafletEvent) => {
+    const cluster = event.layer as L.MarkerCluster;
+    const points = cluster
+      .getAllChildMarkers()
+      .map((marker) => pointByMarker.get(marker)!)
+      .sort((a, b) => a.properties.number - b.properties.number);
+    const header = element('div', 'dialog-header');
+    const title = element('h2', '', `${points.length} Orte in diesem Bereich`);
+    title.id = 'cluster-title';
+    const close = element('button', 'icon-button', '×');
+    close.setAttribute('aria-label', 'Ortsauswahl schließen');
+    close.addEventListener('click', () => chooser.close());
+    header.append(title, close);
+    const zoom = element('button', 'secondary-button', 'Bereich vergrößern');
+    zoom.addEventListener('click', () => {
+      chooser.close();
+      if (map.getZoom() >= 17) cluster.spiderfy();
+      else cluster.zoomToBounds({ maxZoom: 17 });
+    });
+    const list = element('div', 'cluster-places');
+    for (const point of points) {
+      const button = element('button', 'cluster-place');
+      button.append(
+        element('strong', '', `Nr. ${point.properties.number} · ${point.properties.address}`),
+        element('span', '', point.properties.participants.map((person) => person.name).join(' · ')),
+      );
+      button.addEventListener('click', () => {
+        chooser.close();
+        onSelect(point);
+      });
+      list.append(button);
+    }
+    chooser.replaceChildren(header, zoom, list);
+    chooser.showModal();
+  });
   let visible: Kunstpunkt[] = [];
   let selected: string | null = null;
   const locationLayer = L.layerGroup().addTo(map);
@@ -78,7 +116,10 @@ export function createMap(
   return {
     setPoints(points: Kunstpunkt[], fit = false) {
       visible = points;
-      clusters.clearLayers();
+      const nextIds = new Set(points.map((point) => point.id));
+      clusters.removeLayers(
+        [...markers].filter(([id]) => !nextIds.has(id)).map(([, marker]) => marker),
+      );
       for (const point of points) {
         if (!markers.has(point.id)) {
           const p = point.properties;
@@ -96,9 +137,14 @@ export function createMap(
           });
           marker.on('click', () => onSelect(point));
           markers.set(point.id, marker);
+          pointByMarker.set(marker, point);
         }
       }
-      clusters.addLayers(points.map((point) => markers.get(point.id)!));
+      clusters.addLayers(
+        points
+          .map((point) => markers.get(point.id)!)
+          .filter((marker) => !clusters.hasLayer(marker)),
+      );
       if (fit) this.fit();
       highlight();
     },
