@@ -1,5 +1,22 @@
 # Prüfstand des ersten mobilen Kerns
 
+## Ergänzung 18.09.2026: Namen entdecken, Suche und Details
+
+Aktueller Prüfstand: 26 bestandene automatisierte Tests (17 fachliche/DOM-Tests, 9 Tests der gebauten App), TypeScript und Produktionsbuild erfolgreich.
+
+| ID | Kriterium | Ergebnis |
+| --- | --- | --- |
+| E01 | Namen in Ortskarten und Cluster-Auswahl sind gegenüber der Adresse hervorgehoben; Gruppen bis vier Namen bleiben vollständig. | Nr. 185 mit allen vier Namen im DOM geprüft; AURA und KöX im Browser geprüft. |
+| E02 | Künstler & Räume zeigt jeden Quelleneintrag mit seinen Auftrittsorten; Suche, Wochenende und Ortsfavoriten greifen gemeinsam. | 416 Einträge; AURA → Birkenstraße 67; Wildförster und kombinierte Namens-/Adresssuche automatisiert geprüft. Mehrfachauftritte und getrennte gleichnamige Identitäten mit Testdaten geprüft. |
+| E03 | Suche erhält Karte/Liste. Karte passt sich nach 250 ms Tipppause bzw. Enter/Haken an die Treffer an. | Ansichtswechsel automatisiert geprüft; AURA auf Karte mit genau einem Marker im Browser bestätigt. |
+| E04 | Öffnen einer Ortskarte zeigt sofort die vollständige verlinkte Teilnehmerliste. | 22 Einträge an Nr. 194 ohne zweiten Aufklappschritt im DOM und Browser bestätigt. |
+| E05 | Namen scrollen zwischen festem Kopf und festen Routen-/Teilenaktionen. | Bei 360×640 vor/nach Scrollen unveränderte Fußleiste (y=502–609), mittlerer Scrollbereich ca. 298 Pixel. Bei 844×390 nach Anpassung 132 Pixel mittlerer Bereich, Aktionen in einer Zeile. |
+| E06 | Details aus Listen erscheinen als modaler Dialog, Karte behält das Detailpanel; Fokus kehrt zurück. | Anwendungstest für Dialogzustand und Fokus; Browserprüfung mit abgedunkelter Liste. Native Touch- und Screenreaderabnahme auf Zielgeräten weiterhin offen. |
+
+Teilnehmeridentitäten gelten für den aktuellen Datensatz. Der Stern speichert weiterhin Orte. Jahresübergreifende Personenfavoriten und verifizierte dauerhafte Identitäten sind ein späterer Schritt.
+
+Die nachfolgenden Abschnitte dokumentieren frühere Zwischenstände; bei abweichendem Verhalten gelten die Ergänzungen vom 18.09.
+
 ## Ergänzung 18.09.2026: kompakter Header und Karte
 
 - Suchfeld standardmäßig geschlossen, per Suchsymbol mit Fokus erreichbar. Escape/Schließen klappt ein, erhält den Suchfilter und zeigt ihn als löschbaren Suchbegriff. Automatisierter Bedienablauf bestanden.

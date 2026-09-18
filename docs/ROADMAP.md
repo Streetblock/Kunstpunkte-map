@@ -4,6 +4,10 @@ Stand: 13.09.2026 · Entwurf; keine Phase ist bereits abgenommen.
 
 ## Umsetzungsstand
 
+Ergänzung 18.09.2026: Kompakter Header und zoomabhängige Cluster mit direkter Ortsauswahl umgesetzt und veröffentlicht. Künstler-/Raumansicht ergänzt, Namen auf Ortskarten hervorgehoben. Suche behält die gewählte Karte-/Listenansicht und zentriert die Kartentreffer. Details zeigen alle Teilnehmenden ohne weiteres Aufklappen, mit eigener Scrollfläche zwischen festem Kopf und Routen-/Teilenleiste. 26 automatisierte Tests bestanden; Browserprüfungen und Grenzen im Abnahmeprotokoll dokumentiert.
+
+Nächster eigenständiger Ausbau: dauerhafte Personen-/Raumidentitäten mit nachvollziehbaren Quellenzuordnungen, getrennte Personenfavoriten, Jahreswechsel und Export/Import. Vorhandene Ortsfavoriten bleiben dabei erhalten; keine automatische Gleichsetzung anhand gleicher Namen.
+
 - M0: Umfang, unabhängiger Projektkontext und öffentliches GitHub-Repository entschieden.
 - M1: Repository, Import, Datenmodell und mobile Ansichten umgesetzt. Bilder sind optional vorbereitet; Quelle/Nutzungsumfang bleiben offen.
 - M2: Mobiler Kern implementiert und mit 14 fachlichen/Anwendungstests geprüft. Reale Geräteabnahmen bleiben offen.

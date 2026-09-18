@@ -4,7 +4,7 @@ Mobile Leaflet-Karte der Düsseldorfer Kunstpunkte. Unabhängiger Prototyp für 
 
 Besucher sollen auf dem Smartphone schnell einen passenden Kunstpunkt finden, die dort Teilnehmenden ansehen und eine externe Navigation starten können.
 
-Stand: 13. September 2026. Der mobile Kern ist implementiert: Karte mit Clustern, Suche, Wochenend-/Offraumfilter, Liste, Standort mit Luftlinie, Details, Routenlinks und teilbare Kunstpunkt-Links. Bei Namenssuche werden passende Personen in Gruppenateliers zuerst angezeigt und hervorgehoben.
+Stand: 18. September 2026. Der mobile Kern enthält eine kompakte Suchleiste, Karte mit zoomabhängigen Clustern und direkter Ortsauswahl, Wochenend-/Offraumfilter, Orts- und Künstler-/Raumlisten, Standort mit Luftlinie, vollständige Teilnehmerdetails, Routenlinks und teilbare Kunstpunkt-Links. Namen stehen in den Karten im Vordergrund, Adressen bleiben sichtbar.
 
 Repository: [Streetblock/Kunstpunkte-map](https://github.com/Streetblock/Kunstpunkte-map).
 
@@ -36,7 +36,15 @@ npm test
 npm run test:smoke
 ```
 
-`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus und testet die gebündelte App in jsdom mit simulierten Netzwerk- und Standortantworten. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 21 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+`test:smoke` führt TypeScript-Prüfung und Produktionsbuild aus und testet die gebündelte App in jsdom mit simulierten Netzwerk- und Standortantworten. Das ersetzt keinen echten mobilen Browser- oder GPS-Test. Insgesamt werden derzeit 26 Tests ausgeführt. Für Änderungen am Erscheinungsbild: `npm run format`.
+
+## Entdecken und Suchen
+
+- Das Suchsymbol öffnet die Suche. Der Haken bzw. Enter klappt sie ein; ein aktiver Begriff bleibt sichtbar und gezielt löschbar.
+- Suche erhält die gewählte Ansicht. Auf der Karte erscheinen die Treffer nach kurzer Tipppause im passenden Ausschnitt; in der Liste bleiben sie als Liste sichtbar. Wochenend-/Offraumfilter erhalten den gewählten Ausschnitt, „Übersicht“ zeigt alle gefilterten Orte.
+- „Orte“ gruppiert die Namen nach Kunstpunkt. „Künstler & Räume“ zeigt jeden Eintrag der Quelle mit den zugehörigen Adressen und Terminen. „Ort/Alle Orte auf Karte“ setzt einen sichtbaren, löschbaren Namensfilter.
+- Beim Öffnen sind alle Teilnehmenden mit ihren Originalseiten direkt erreichbar. Nur der mittlere Namensbereich scrollt; Kopf, Routenbuttons und Teilen bleiben sichtbar. Aus der Liste öffnen Details als Dialog, auf der Karte als Panel.
+- Gleiche Quellkennungen können mehrere Auftritte in dieser Ausgabe bündeln. Gleiche Namen werden nicht automatisch gleichgesetzt. Dauerhafte Personenfavoriten über mehrere Jahre sind noch nicht implementiert.
 
 ## Favoriten
 
