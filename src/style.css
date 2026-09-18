@@ -140,7 +140,7 @@ input {
 .search-box input {
   width: 100%;
   min-width: 0;
-  min-height: 50px;
+  min-height: 44px;
   border: 0;
   background: none;
   outline: none;
@@ -465,7 +465,7 @@ dialog .icon-button {
 }
 @media (min-width: 760px) {
   .search-panel {
-    padding: 24px 32px 18px;
+    padding: max(6px, env(safe-area-inset-top)) 16px 6px;
   }
   .brand-row h1 {
     font-size: 34px;
@@ -1173,8 +1173,8 @@ mark {
 .active-search {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 6px;
+  gap: 6px;
+  margin-top: 4px;
 }
 .search-controls .search-box {
   flex: 1;
@@ -1183,6 +1183,10 @@ mark {
 .active-search {
   border-radius: 12px;
   background: #eef3e0;
+}
+#search-close {
+  background: var(--accent);
+  border-color: #c9dd75;
 }
 #search-edit {
   flex: 1;
