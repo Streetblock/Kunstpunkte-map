@@ -1,0 +1,17 @@
+{
+  "id": "./",
+  "name": "Kunstpunkte unterwegs",
+  "short_name": "Kunstpunkte",
+  "description": "Ateliers, Künstler und Offräume in Düsseldorf entdecken und merken.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#142b4a",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
