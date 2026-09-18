@@ -10,12 +10,12 @@
     "format": "prettier --write src scripts tests index.html vite.config.ts package.json tsconfig.json .prettierrc.json",
     "format:check": "prettier --check src scripts tests index.html vite.config.ts package.json tsconfig.json .prettierrc.json",
     "dev": "vite",
-    "build": "npm run check && vite build",
+    "build": "npm run check && vite build && node scripts/build-sw.ts",
     "preview": "vite preview --host 127.0.0.1 --port 4173 --strictPort",
     "data:import": "node scripts/import-data.ts",
     "check": "tsc --noEmit",
     "test": "node --test tests/*.test.ts",
-    "test:smoke": "npm run build && node --test tests/app.smoke.ts"
+    "test:smoke": "npm run build && node --test tests/*.smoke.ts"
   },
   "devDependencies": {
     "@types/jsdom": "30.0.0",

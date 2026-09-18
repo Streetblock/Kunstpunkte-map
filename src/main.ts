@@ -15,6 +15,7 @@ import { createSearchPanel } from './search-panel.ts';
 import { participantEntries } from './participants.ts';
 import type { ParticipantEntry } from './participants.ts';
 import { participantCards } from './participant-list.ts';
+import { setupPwa } from './pwa.ts';
 
 required('#app').innerHTML = `
   <main class="app-shell" aria-label="Kunstpunkte entdecken">
@@ -273,6 +274,8 @@ required('#view-list').addEventListener('click', () => setView('list'));
 required('#map-reset').addEventListener('click', () => map.fit());
 desktop.addEventListener('change', () => setView(view));
 setView(view);
+setupPwa();
+if (!navigator.onLine) setView('list');
 required('#sort').addEventListener('change', () => render(false));
 required<HTMLButtonElement>('#locate').addEventListener('click', async () => {
   const button = required<HTMLButtonElement>('#locate');

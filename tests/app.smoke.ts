@@ -16,6 +16,7 @@ async function start(
   url = 'https://streetblock.github.io/Kunstpunkte-map/',
   failFetch = false,
   favorites: { saved?: string; blocked?: boolean } = {},
+  offline = false,
 ) {
   const errors: Error[] = [];
   const console = new VirtualConsole();
@@ -27,6 +28,7 @@ async function start(
     virtualConsole: console,
   });
   const win = dom.window;
+  Object.defineProperty(win.navigator, 'onLine', { value: !offline });
   // jsdom has no native dialog top layer; browser QA covers focus trapping/backdrop.
   win.HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute('open', '');
@@ -73,6 +75,54 @@ async function start(
     throw error;
   }
 }
+
+test('offline startup selects the list and explains offline support without hiding the app', async () => {
+  const app = await start(undefined, false, {}, true);
+  try {
+    const document = app.dom.window.document;
+    assert.equal(document.querySelector('#view-list')?.getAttribute('aria-pressed'), 'true');
+    assert.equal(document.querySelectorAll('.point-card').length, 196);
+    assert.equal(document.querySelector<HTMLElement>('#pwa-banner')?.hidden, false);
+    assert.match(
+      document.querySelector('#offline-state')!.textContent!,
+      /keine Offline-Speicherung/,
+    );
+    assert.deepEqual(app.errors, []);
+  } finally {
+    app.dom.window.close();
+  }
+});
+
+test('installation action appears only with a browser prompt and is consumed once', async () => {
+  const app = await start();
+  try {
+    const win = app.dom.window;
+    const install = win.document.querySelector<HTMLButtonElement>('#app-install')!;
+    assert.equal(install.hidden, true);
+    let prompts = 0;
+    const event = new win.Event('beforeinstallprompt', { cancelable: true });
+    Object.assign(event, {
+      prompt: async () => {
+        prompts++;
+      },
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    });
+    win.dispatchEvent(event);
+    assert.equal(event.defaultPrevented, true);
+    assert.equal(install.hidden, false);
+    install.click();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    assert.equal(prompts, 1);
+    assert.equal(install.hidden, true);
+    assert.match(
+      win.document.querySelector('.pwa-info')!.textContent!,
+      /Als App geöffnet oder installiert/,
+    );
+    assert.deepEqual(app.errors, []);
+  } finally {
+    app.dom.window.close();
+  }
+});
 
 test('production app starts, filters and visibly promotes Wildförster without asking for location', async () => {
   const app = await start();

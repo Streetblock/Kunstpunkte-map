@@ -25,7 +25,7 @@ export function createMap(
   L.control
     .zoom({ position: 'topright', zoomInTitle: 'Vergrößern', zoomOutTitle: 'Verkleinern' })
     .addTo(map);
-  // Only request visible tiles. No service worker, prefetch or offline tile download.
+  // Only request visible tiles. Tiles are excluded from the service worker cache.
   const tiles = L.tileLayer(
     import.meta.env.VITE_TILE_URL || 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     {
