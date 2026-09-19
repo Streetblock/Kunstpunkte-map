@@ -31,12 +31,23 @@ export function setupPwa() {
   check.id = 'app-update-check';
   section.append(heading, install, instruction, state, update, check);
   info.append(section);
-  const banner = element('p', 'pwa-banner');
+  const banner = element('div', 'pwa-banner');
   banner.id = 'pwa-banner';
-  banner.setAttribute('role', 'status');
+  const bannerText = element('p');
+  bannerText.setAttribute('role', 'status');
+  const dismiss = element('button', 'pwa-banner-dismiss', '×');
+  dismiss.setAttribute('aria-label', 'Update-Hinweis ausblenden');
+  dismiss.title = 'Update-Hinweis ausblenden';
+  banner.append(bannerText, dismiss);
   required('.search-panel').after(banner);
   let ready = false;
   let waiting = false;
+  let updateDismissed = false;
+  dismiss.addEventListener('click', () => {
+    updateDismissed = true;
+    showConnectivity();
+    required<HTMLButtonElement>('#info-open').focus({ preventScroll: true });
+  });
   let registration: ServiceWorkerRegistration | undefined;
   let deferred: InstallPrompt | undefined;
   const standalone = matchMedia('(display-mode: standalone)');
@@ -68,8 +79,9 @@ export function setupPwa() {
     }
   });
   function showConnectivity() {
-    banner.hidden = navigator.onLine && !waiting;
-    banner.textContent = !navigator.onLine
+    banner.hidden = navigator.onLine && (!waiting || updateDismissed);
+    dismiss.hidden = !navigator.onLine || !waiting;
+    bannerText.textContent = !navigator.onLine
       ? ready
         ? 'Offline · Liste, Suche und Favoriten verfügbar. Kartenhintergrund und externe Links benötigen Internet.'
         : 'Offline · Offline-Daten noch nicht bestätigt. Bitte bei Verbindung erneut öffnen.'
@@ -78,6 +90,7 @@ export function setupPwa() {
   showConnectivity();
   async function inspect() {
     waiting = !!registration?.waiting;
+    if (!waiting) updateDismissed = false;
     update.hidden = !waiting;
     const worker = registration?.active;
     if (!worker) {

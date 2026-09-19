@@ -13,11 +13,30 @@
   --surface: #fff;
 }
 .pwa-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   flex: none;
   background: #eef3e0;
   border-bottom: 1px solid var(--line);
   padding: 7px 14px;
   font-size: 13px;
+}
+.pwa-banner p {
+  flex: 1;
+  min-width: 0;
+}
+.pwa-banner-dismiss {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+  border-radius: 50%;
+}
+.pwa-banner-dismiss:hover {
+  background: #142b4a0a;
 }
 .pwa-info {
   border-top: 1px solid var(--line);
