@@ -394,7 +394,7 @@ input {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding-right: 42px;
+  padding-right: 58px;
   margin-bottom: 12px;
 }
 .detail-topline .eyebrow {
@@ -1171,6 +1171,19 @@ mark {
   background: var(--accent);
   border-color: #c9dd75;
 }
+.favorite-icon {
+  display: block;
+  width: 23px;
+  height: 23px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linejoin: round;
+}
+.favorite-button[aria-pressed='true'] .favorite-icon {
+  fill: currentColor;
+}
 .point-row > .favorite-button {
   position: absolute;
   right: 8px;
@@ -1181,9 +1194,6 @@ mark {
   font-weight: 700;
   padding: 0 14px;
   margin: 6px 0;
-}
-.detail-sheet .favorite-button > span:first-child {
-  font-size: 23px;
 }
 .favorites-hint {
   font-size: 14px;
